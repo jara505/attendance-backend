@@ -1,0 +1,10 @@
+.git
+.env
+__pycache__
+*.pyc
+.agents
+skills
+scripts
+AGENTS.md
+README.md
+structure_database.md
