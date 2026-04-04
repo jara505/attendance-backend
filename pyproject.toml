@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "attendance-backend"
+version = "0.1.0"
+description = "Attendance Backend API"
+authors = ["jara505"]
+
+[tool.poetry.dependencies]
+python = ">=3.12,<3.15"
+fastapi = ">=0.115.0"
+uvicorn = { version = ">=0.30.0", extras = ["standard"] }
+sqlalchemy = ">=2.0.0"
+aiosqlite = ">=0.20.0"
+bcrypt = ">=4.0.0"
+pyjwt = ">=2.0.0"
+pydantic = ">=2.0.0"
+pydantic-settings = ">=2.0.0"
+python-dotenv = ">=1.0.0"
+email-validator = ">=2.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
