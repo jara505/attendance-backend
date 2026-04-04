@@ -1,8 +1,11 @@
 services:
   backend:
-    build: .
+    image: mrx505/attendance-backend:latest
     ports:
       - "8000:8000"
-    env_file:
-      - .env
+    environment:
+      - JWT_SECRET_KEY=[REDACTED:secret-value]
+      - ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRATION_MINUTES=30
+      - DATABASE_URL=sqlite+aiosqlite:///database.db
     restart: unless-stopped
