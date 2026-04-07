@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 from collections.abc import AsyncGenerator
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from src.infrastructure.database import engine, Base
 import src.infrastructure.models  # noqa: F401
@@ -16,4 +17,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
 
 
 app = FastAPI(title="Attendance Backend", version="0.1.0", lifespan=lifespan)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 app.include_router(auth_router, prefix="/api/v1")
