@@ -1,18 +1,44 @@
 from collections.abc import AsyncGenerator
 
-from fastapi import Depends
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.application.use_cases.change_password_use_case import ChangePasswordUseCase
 from src.application.use_cases.login_use_case import LoginUseCase
 from src.infrastructure.database import async_session
 from src.infrastructure.repositories.auth_repository_impl import SQLAlchemyAuthRepository
 from src.infrastructure.services.bcrypt_password_service import BcryptPasswordService
 from src.infrastructure.services.jwt_token_service import JwtTokenService
 
+_bearer_scheme = HTTPBearer()
+_token_service = JwtTokenService()
+
 
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
     async with async_session() as session:
         yield session
+
+
+async def get_current_user_id(
+    credentials: HTTPAuthorizationCredentials = Depends(_bearer_scheme),
+) -> str:
+    try:
+        payload = _token_service.decode_token(credentials.credentials)
+        user_id: str | None = payload.get("sub")
+        if user_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token payload",
+            )
+        return user_id
+    except Exception as exc:
+        if isinstance(exc, HTTPException):
+            raise
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+        ) from exc
 
 
 async def get_login_use_case(
@@ -22,4 +48,13 @@ async def get_login_use_case(
         auth_repository=SQLAlchemyAuthRepository(session),
         password_service=BcryptPasswordService(),
         token_service=JwtTokenService(),
+    )
+
+
+async def get_change_password_use_case(
+    session: AsyncSession = Depends(get_session),
+) -> ChangePasswordUseCase:
+    return ChangePasswordUseCase(
+        auth_repository=SQLAlchemyAuthRepository(session),
+        password_service=BcryptPasswordService(),
     )
