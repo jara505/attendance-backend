@@ -11,3 +11,8 @@ class UserNotFoundError(Exception):
 class InactiveUserError(Exception):
     def __init__(self) -> None:
         super().__init__("User account has been deactivated")
+
+
+class SamePasswordError(Exception):
+    def __init__(self) -> None:
+        super().__init__("New password must be different from the current password")
