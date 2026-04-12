@@ -35,12 +35,12 @@ class AcademicRepository:
         weekday = weekday_map.get(current_weekday.upper(), WeekDay.MON)
         
         # Query: clases del teacher con schedule para el día actual
+        # No cargamos period para evitar problema con enum vs int
         stmt = (
             select(Class)
             .options(
-                selectinload(Class.subject),
+                selectinload(Class.subject).selectinload(Subject.course),
                 selectinload(Class.group),
-                selectinload(Class.period),
                 selectinload(Class.schedules).selectinload(Schedule.classroom)
             )
             .where(
