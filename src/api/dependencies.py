@@ -5,8 +5,10 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.application.use_cases.change_password_use_case import ChangePasswordUseCase
+from src.application.use_cases.get_today_classes_use_case import GetTodayClassesUseCase
 from src.application.use_cases.login_use_case import LoginUseCase
 from src.infrastructure.database import async_session
+from src.infrastructure.repositories.academic_repository import AcademicRepository
 from src.infrastructure.repositories.auth_repository_impl import SQLAlchemyAuthRepository
 from src.infrastructure.services.bcrypt_password_service import BcryptPasswordService
 from src.infrastructure.services.jwt_token_service import JwtTokenService
@@ -58,3 +60,47 @@ async def get_change_password_use_case(
         auth_repository=SQLAlchemyAuthRepository(session),
         password_service=BcryptPasswordService(),
     )
+
+
+async def get_today_classes_use_case(
+    session: AsyncSession = Depends(get_session),
+) -> GetTodayClassesUseCase:
+    return GetTodayClassesUseCase(
+        repository=AcademicRepository(session),
+    )
+
+
+async def get_current_teacher_id(
+    user_id: str = Depends(get_current_user_id),
+    session: AsyncSession = Depends(get_session),
+) -> str:
+    """
+    Obtiene el id_teacher a partir del user_id del token.
+    Verifica que el usuario sea un Teacher.
+    """
+    from sqlalchemy import select
+    from src.infrastructure.models.user_models import User, UserRole, Teacher
+    
+    result = await session.execute(
+        select(User).where(User.id_user == user_id)
+    )
+    user = result.scalar_one_or_none()
+    
+    if user is None or user.role != UserRole.TEACHER:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only teachers can access this resource",
+        )
+    
+    result = await session.execute(
+        select(Teacher).where(Teacher.id_user == user_id)
+    )
+    teacher = result.scalar_one_or_none()
+    
+    if teacher is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Teacher profile not found",
+        )
+    
+    return teacher.id_teacher
