@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.infrastructure.database import engine, Base
 import src.infrastructure.models  # noqa: F401
 from src.api.routes.auth_router import router as auth_router
+from src.api.routes.academic_router import router as academic_router
 
 
 @asynccontextmanager
@@ -25,3 +26,4 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(auth_router, prefix="/api/v1")
+app.include_router(academic_router, prefix="/api/v1")
