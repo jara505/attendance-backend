@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.application.use_cases.change_password_use_case import ChangePasswordUseCase
 from src.application.use_cases.get_today_classes_use_case import GetTodayClassesUseCase
+from src.application.use_cases.get_user_profile_use_case import GetUserProfileUseCase
 from src.application.use_cases.login_use_case import LoginUseCase
 from src.infrastructure.database import async_session
 from src.infrastructure.repositories.academic_repository import AcademicRepository
@@ -104,3 +105,9 @@ async def get_current_teacher_id(
         )
     
     return teacher.id_teacher
+
+
+def get_user_profile_use_case(
+    session: AsyncSession = Depends(get_session),
+) -> GetUserProfileUseCase:
+    return GetUserProfileUseCase(session)
