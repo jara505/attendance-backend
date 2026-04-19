@@ -13,7 +13,11 @@ class GetTodayClassesUseCase:
         """
         now = datetime.now()
         current_time = now.time()
-        current_weekday = now.strftime("%A")  # MONDAY, TUESDAY, etc.
+        weekday_map = {
+            "Monday": "MON", "Tuesday": "TUE", "Wednesday": "WED",
+            "Thursday": "THU", "Friday": "FRI", "Saturday": "SAT", "Sunday": "SUN"
+        }
+        current_weekday = weekday_map.get(now.strftime("%A"), "MON")
         
         classes = await self._repository.get_today_classes_by_teacher(
             teacher_id=teacher_id,
