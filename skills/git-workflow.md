@@ -97,31 +97,49 @@ feat(CLI): add flag        ← scope must be lowercase
 update docs                ← no conventional commit format
 ```
 
----
-
 ## 3. Pull Request Structure
 
-PRs must be submitted in Markdown with the following sections:
-
 ### Overview
-High-level summary of the goal. If it's a bugfix, briefly describe the root cause.
+- Goal
+- Root cause (if bug)
+- Approach taken
+
+### Rationale
+- Why this solution
+- Trade-offs (if relevant)
 
 ### Key Changes
+Grouped by concern:
 
-| File | Change |
-|------|--------|
-| `path/to/file` | What changed and why |
+#### [Feature / Fix / Refactor]
+- `file.ts`: what + why
+- `file2.ts`: what + why
 
 ### Impact
-List of modules affected and how their behavior changes. If any change breaks existing behavior, describe what changes and how it affects consumers.
+- Affected modules
+- Behavior changes
+- Breaking changes (if any)
+- Risks / edge cases
 
 ### Test Plan
-- [ ] Tests pass locally
-- [ ] Manually tested the affected functionality
-- [ ] Docs updated if behavior changed
+- Unit tests:
+- Manual scenarios:
+- Edge cases validated:
 
-**Size:** Keep PRs focused; avoid "mega-PRs."
+### Risk Level
+- Low / Medium / High
+- Reason
+
+### Rollback Plan
+- Revert strategy
+- Data considerations (if any)
+
+### Scope Check
+- Single responsibility PR: yes/no
+- Justification if no
+
 ---
+<!-- Keep PRs focused. Avoid mega-PRs. -->
 
 ## 4. Forbidden Git Operations
 
@@ -143,15 +161,49 @@ Before opening a Pull Request, the AI must ensure:
 - No debug logs remain
 
 ---
-
 ## 6. Sensitive Files
 
-The AI must request explicit confirmation before modifying:
+Explicit approval is required before modifying any file that matches ANY of the following:
 
-- Dependency manifests (e.g., `package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod`)
-- Lockfiles (e.g., `package-lock.json`, `poetry.lock`, `Cargo.lock`, `go.sum`)
-- CI/CD configuration
-- Database migrations
+### 6.1 Impact-Based Rules (Primary)
+- Alters dependency resolution or versioning
+- Changes build, execution, or runtime behavior
+- Affects deployment, infrastructure, or automation pipelines
+- Modifies data schemas, persistence, or migrations
+- Impacts security boundaries (auth, secrets, permissions)
+
+---
+
+### 6.2 Pattern-Based Detection (Heuristics)
+
+Treat as sensitive if file path or name matches patterns like:
+
+- Dependency / package management:
+  - `*manifest*`, `*dependencies*`, `*requirements*`, `*lock*`
+- Build & runtime config:
+  - `config/*`, `*.config.*`, `*.env*`
+- CI/CD & automation:
+  - `.github/*`, `.gitlab/*`, `ci/*`, `pipelines/*`
+- Infrastructure:
+  - `infra/*`, `terraform/*`, `docker/*`, `k8s/*`
+- Database:
+  - `migrations/*`, `schema/*`, `db/*`
+
+---
+
+### 6.3 Unknown File Rule (Fail-Safe)
+
+If the AI cannot confidently determine the impact of a file:
+→ Treat it as sensitive by default
+
+---
+
+### 6.4 Enforcement
+
+Before modifying any sensitive file:
+1. Explain intended change
+2. Describe potential impact
+3. WAIT for explicit user approval
 
 ---
 
