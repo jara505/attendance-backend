@@ -1,21 +1,26 @@
-FROM python:3.13-slim AS base
+# --- Build stage ---
+FROM python:3.13.4-slim AS builder
+
+WORKDIR /app
+
+COPY requirements.txt ./
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+
+# --- Runtime stage ---
+FROM python:3.13.4-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
+COPY --from=builder /install /usr/local
+
 WORKDIR /app
 
-# Install Poetry
-RUN pip install --no-cache-dir poetry \
-    && poetry config virtualenvs.create false
-
-# Copy dependency files first for layer caching
-COPY pyproject.toml poetry.lock ./
-RUN poetry install --no-root --only main
-
-# Copy application source and database
 COPY src/ ./src/
 COPY database.db ./database.db
+
+RUN adduser --disabled-password --no-create-home appuser
+USER appuser
 
 EXPOSE 8000
 
