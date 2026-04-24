@@ -1,8 +1,10 @@
+from datetime import date
 from src.application.dtos.session_dto import CreateSessionRequest, SessionResponse
 from src.domain.exceptions.session_exceptions import (
     ClassNotFoundError,
     UnauthorizedSessionAccessError,
     SessionAlreadyExistsError,
+    SessionDateInPastError,
 )
 from src.infrastructure.models.class_models import WeekDay
 
@@ -31,6 +33,12 @@ class CreateSessionUseCase:
             5: WeekDay.SAT,
             6: WeekDay.SUN,
         }
+
+        # Solo permitir crear sesión para hoy
+        if request.session_date != date.today():
+            raise SessionDateInPastError(
+                f"Session must be created for today ({date.today()}), not {request.session_date}"
+            )
 
         session_weekday = weekday_map[request.session_date.weekday()]
         schedule = next(

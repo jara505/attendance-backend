@@ -14,6 +14,7 @@ from src.domain.exceptions.session_exceptions import (
     UnauthorizedSessionAccessError,
     SessionNotFoundError,
     InvalidSessionStateError,
+    SessionDateInPastError,
 )
 
 router = APIRouter(prefix="/sessions", tags=["Sessions"])
@@ -40,6 +41,8 @@ async def create_session(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except UnauthorizedSessionAccessError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+    except SessionDateInPastError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.post("/{session_id}/activate", response_model=SessionResponse)

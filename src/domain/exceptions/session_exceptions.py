@@ -46,3 +46,8 @@ class QRCodeExpiredError(Exception):
 class QRCodeNotYetValidError(Exception):
     def __init__(self) -> None:
         super().__init__("QR code is not yet valid")
+
+
+class SessionDateInPastError(Exception):
+    def __init__(self, session_date: str) -> None:
+        super().__init__(f"Cannot create session for past date '{session_date}'")
