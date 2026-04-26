@@ -65,5 +65,8 @@ class TeacherFlag(Base):
     level: Mapped[FlagLevel | None] = mapped_column(default=None)
     status: Mapped[FlagStatus | None] = mapped_column(default=None)
     creation_date: Mapped[datetime | None] = mapped_column(default=datetime.now)
+    session_id: Mapped[str | None] = mapped_column(
+        ForeignKey("sessions.id_session"), default=None
+    )
 
     teacher: Mapped["Teacher"] = relationship(back_populates="flags")  # noqa: F821

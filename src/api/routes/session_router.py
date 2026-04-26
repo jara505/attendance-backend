@@ -4,9 +4,11 @@ from src.application.dtos.session_dto import (
     CreateSessionRequest,
     SessionResponse,
     ActivateSessionRequest,
+    ExtendSessionResponse,
 )
 from src.application.use_cases.create_session_use_case import CreateSessionUseCase
 from src.application.use_cases.activate_session_use_case import ActivateSessionUseCase
+from src.application.use_cases.extend_session_use_case import ExtendSessionUseCase
 from src.api.dependencies import get_current_teacher_id, get_session
 from src.domain.exceptions.session_exceptions import (
     SessionAlreadyExistsError,
@@ -15,6 +17,7 @@ from src.domain.exceptions.session_exceptions import (
     SessionNotFoundError,
     InvalidSessionStateError,
     SessionDateInPastError,
+    ExtendedModeNotAllowedError,
 )
 
 router = APIRouter(prefix="/sessions", tags=["Sessions"])
@@ -62,4 +65,25 @@ async def activate_session(
     except SessionNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except InvalidSessionStateError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+
+
+@router.post("/{session_id}/extend", response_model=ExtendSessionResponse)
+async def extend_session(
+    session_id: str,
+    teacher_id: str = Depends(get_current_teacher_id),
+    session_factory=Depends(get_session),
+):
+    from src.infrastructure.repositories.session_repository_impl import SQLAlchemySessionRepository
+    from src.infrastructure.repositories.teacher_flag_repository_impl import SQLAlchemyTeacherFlagRepository
+
+    session_repo = SQLAlchemySessionRepository(session_factory)
+    flag_repo = SQLAlchemyTeacherFlagRepository(session_factory)
+
+    use_case = ExtendSessionUseCase(session_repo, flag_repo)
+    try:
+        return await use_case.execute(session_id, teacher_id)
+    except SessionNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except ExtendedModeNotAllowedError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))

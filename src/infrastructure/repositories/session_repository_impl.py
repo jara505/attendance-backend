@@ -1,4 +1,4 @@
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 from uuid import uuid4
 
 from sqlalchemy import select, and_
@@ -111,7 +111,7 @@ class SQLAlchemySessionRepository(SessionRepositoryPort):
         
         session.extended_mode = True
         if session.closes_at:
-            session.closes_at = session.closes_at + datetime.timedelta(minutes=extension_minutes)
+            session.closes_at = session.closes_at + timedelta(minutes=extension_minutes)
         
         await self._session.commit()
         await self._session.refresh(session)
