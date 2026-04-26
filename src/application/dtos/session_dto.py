@@ -42,3 +42,10 @@ class QRResponse(BaseModel):
     expires_at: str
     class_id: str
     session_id: str
+
+
+class ExtendSessionResponse(BaseModel):
+    id_session: str
+    extended_mode: bool
+    qr_expires: str | None = None
+    extensions_today: int
