@@ -2,6 +2,7 @@ from collections.abc import AsyncGenerator
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.application.use_cases.change_password_use_case import ChangePasswordUseCase
@@ -9,6 +10,7 @@ from src.application.use_cases.get_today_classes_use_case import GetTodayClasses
 from src.application.use_cases.get_user_profile_use_case import GetUserProfileUseCase
 from src.application.use_cases.login_use_case import LoginUseCase
 from src.infrastructure.database import async_session
+from src.infrastructure.models.user_models import Teacher, User, UserRole
 from src.infrastructure.repositories.academic_repository import AcademicRepository
 from src.infrastructure.repositories.auth_repository_impl import SQLAlchemyAuthRepository
 from src.infrastructure.services.bcrypt_password_service import BcryptPasswordService
@@ -77,34 +79,28 @@ async def get_current_teacher_id(
 ) -> str:
     """
     Obtiene el id_teacher a partir del user_id del token.
-    Verifica que el usuario sea un Teacher.
+    Verifica en una sola consulta que el usuario exista, sea TEACHER y
+    tenga perfil de Teacher activo.
     """
-    from sqlalchemy import select
-    from src.infrastructure.models.user_models import User, UserRole, Teacher
-    
-    result = await session.execute(
-        select(User).where(User.id_user == user_id)
+    stmt = (
+        select(Teacher.id_teacher)
+        .join(User, User.id_user == Teacher.id_user)
+        .where(
+            User.id_user == user_id,
+            User.role == UserRole.TEACHER,
+            User.deleted_at.is_(None),
+            Teacher.deleted_at.is_(None),
+        )
     )
-    user = result.scalar_one_or_none()
-    
-    if user is None or user.role != UserRole.TEACHER:
+    teacher_id = (await session.execute(stmt)).scalar_one_or_none()
+
+    if teacher_id is None:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only teachers can access this resource",
         )
-    
-    result = await session.execute(
-        select(Teacher).where(Teacher.id_user == user_id)
-    )
-    teacher = result.scalar_one_or_none()
-    
-    if teacher is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Teacher profile not found",
-        )
-    
-    return teacher.id_teacher
+
+    return teacher_id
 
 
 def get_user_profile_use_case(
