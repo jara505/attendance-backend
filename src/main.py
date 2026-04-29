@@ -3,6 +3,8 @@ from collections.abc import AsyncGenerator
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.responses import ORJSONResponse
 
 from src.infrastructure.database import engine, Base
 import src.infrastructure.models  # noqa: F401
@@ -19,7 +21,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
     yield
 
 
-app = FastAPI(title="Attendance Backend", version="0.1.0", lifespan=lifespan)
+app = FastAPI(
+    title="Attendance Backend",
+    version="0.1.0",
+    lifespan=lifespan,
+    default_response_class=ORJSONResponse,
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -27,6 +34,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# Registrado después de CORS → queda como middleware interno: comprime
+# la respuesta antes de que CORS agregue sus headers.
+app.add_middleware(GZipMiddleware, minimum_size=500)
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(academic_router, prefix="/api/v1")
 app.include_router(profile_router, prefix="/api/v1")
