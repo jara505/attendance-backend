@@ -99,47 +99,95 @@ update docs                ← no conventional commit format
 
 ## 3. Pull Request Structure
 
-### Overview
-- Goal
-- Root cause (if bug)
-- Approach taken
-
-### Rationale
-- Why this solution
-- Trade-offs (if relevant)
-
-### Key Changes
-Grouped by concern:
-
-#### [Feature / Fix / Refactor]
-- `file.ts`: what + why
-- `file2.ts`: what + why
-
-### Impact
-- Affected modules
-- Behavior changes
-- Breaking changes (if any)
-- Risks / edge cases
-
-### Test Plan
-- Unit tests:
-- Manual scenarios:
-- Edge cases validated:
-
-### Risk Level
-- Low / Medium / High
-- Reason
-
-### Rollback Plan
-- Revert strategy
-- Data considerations (if any)
-
-### Scope Check
-- Single responsibility PR: yes/no
-- Justification if no
+> **Note:** Blockquoted sections are formatting instructions for the AI — never include them as PR content. Sections marked `<!-- conditional -->` should only be included when their condition applies. Use `##` for section headers when generating PR descriptions.
 
 ---
-<!-- Keep PRs focused. Avoid mega-PRs. -->
+
+## Overview
+
+- **Goal:** Paragraph or max 3 bullets
+- **Root Cause:** *(bug fixes only)* Paragraph or max 3 bullets
+- **Approach:** Paragraph or max 3 bullets
+
+> **Formatting:**
+> 1 idea → paragraph · 2–3 independent ideas → bullets · Max 3 per block
+> Each bullet = 1 atomic idea · Do not mix paragraph and bullets
+
+---
+
+<!-- conditional: Include ONLY when trade-offs exist or the approach requires justification beyond Overview -->
+## Rationale
+
+- **Why:** `decision → reason` (e.g., `"Extract hook → avoid prop drilling"`)
+- **Trade-offs:** `trade-off → impact` or `"None"`
+
+> **Formatting:**
+> Max 2–3 bullets per field · Avoid vague statements without concrete context
+
+---
+
+## Key Changes
+
+**Single context:**
+
+| File | What | Why |
+|------|------|-----|
+| `file.ts` | Change description | Reason |
+
+**Multiple contexts** — group by domain (e.g., Auth, Routing, UI):
+
+| File | What | Why |
+|------|------|-----|
+| `file.ts` | Change description | Reason |
+
+> **Formatting:**
+> Always use table format · Group only when multiple distinct domains exist
+> Context names must be meaningful (no "misc", "other") · Each row = 1 concise change
+
+---
+
+## Impact
+
+- **Modules:** Affected modules list
+- **Behavior:** `change → visible effect`
+- **Breaking:** `change → impact` or `"None"`
+- **Risks:** `risk → consequence` or `"None"`
+- **Risk Level:** `Low` · `Medium` · `High`
+- **Risk Reason:** `cause → potential impact`
+
+> **Formatting:**
+> Format: `action/change → outcome` · Max 3–5 bullets per field
+> Behavior = observable change · Breaking = contract/API change
+> Risk Reason required only when Level is Medium or High
+> Use `"None"` for fields that don't apply
+> Use table format when a field has multiple items with 2+ dimensions — otherwise use bullets
+
+---
+
+## Test Plan
+
+- **Unit:** Summary (e.g., `All passing`, `12 new, 0 failing`, or `N/A`)
+
+**Manual**
+- [ ] `action → expected result`
+
+**Edge Cases**
+- [ ] `condition → expected result`
+
+> **Formatting:**
+> Unit = one-liner referencing CI or test count — do not list individual unit tests
+> Manual and Edge Cases = checkboxes (`- [ ]`) · Max 3–5 per category
+> Each checkbox = 1 verifiable case · Omit category entirely if not applicable
+
+---
+
+<!-- conditional: Include ONLY when rollback requires more than git revert (infra, migrations, data, breaking changes) -->
+## Rollback Plan
+
+- **Revert:** Steps to undo (e.g., rollback deploy, revert migration)
+- **Data:** Data considerations or `"None"`
+
+---
 
 ## 4. Forbidden Git Operations
 
