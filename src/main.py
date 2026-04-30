@@ -12,6 +12,7 @@ from src.api.routes.auth_router import router as auth_router
 from src.api.routes.academic_router import router as academic_router
 from src.api.routes.profile_router import router as profile_router
 from src.api.routes.session_router import router as session_router
+from src.api.routes.attendance_router import router as attendance_router
 
 
 @asynccontextmanager
@@ -41,3 +42,4 @@ app.include_router(auth_router, prefix="/api/v1")
 app.include_router(academic_router, prefix="/api/v1")
 app.include_router(profile_router, prefix="/api/v1")
 app.include_router(session_router, prefix="/api/v1")
+app.include_router(attendance_router, prefix="/api/v1")

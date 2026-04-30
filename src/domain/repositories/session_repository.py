@@ -55,3 +55,7 @@ class SessionRepositoryPort(ABC):
         extension_minutes: int,
     ) -> Session:
         raise NotImplementedError
+
+    @abstractmethod
+    async def get_by_qr_token(self, qr_token: str) -> Session | None:
+        raise NotImplementedError

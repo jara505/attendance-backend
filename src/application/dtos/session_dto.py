@@ -27,6 +27,7 @@ class SessionResponse(BaseModel):
     qr_token: str | None = None
     qr_expires: str | None = None
     extended_mode: bool = False
+    total_students: int = 0
 
 
 class ActivateSessionRequest(BaseModel):
@@ -49,3 +50,32 @@ class ExtendSessionResponse(BaseModel):
     extended_mode: bool
     qr_expires: str | None = None
     extensions_today: int
+
+
+class AttendanceStatusEnum(str, Enum):
+    PRESENT = "PRESENT"
+    ABSENT = "ABSENT"
+    LATE = "LATE"
+    JUSTIFIED = "JUSTIFIED"
+
+
+class CheckInRequest(BaseModel):
+    qr_token: str
+    student_id: str
+
+
+class CheckInResponse(BaseModel):
+    id_attendance: str
+    id_session: str
+    id_student: str
+    status: AttendanceStatusEnum
+    record_date: str
+
+
+class AttendanceSummaryResponse(BaseModel):
+    id_session: str
+    total_enrolled: int
+    present: int
+    absent: int
+    late: int
+    justified: int
