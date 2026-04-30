@@ -1,9 +1,9 @@
 from datetime import datetime, time
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from src.infrastructure.models.class_models import Class, Schedule, WeekDay
+from src.infrastructure.models.class_models import Class, Schedule, WeekDay, Enrollment
 from src.infrastructure.models.academic_models import Course, Group, Subject
 from src.infrastructure.models.class_models import Classroom
 
@@ -20,12 +20,19 @@ class AcademicRepository:
         Retorna lista de diccionarios con datos necesarios.
         """
         weekday_map = {
+            "MON": WeekDay.MON,
             "MONDAY": WeekDay.MON,
+            "TUE": WeekDay.TUE,
             "TUESDAY": WeekDay.TUE,
+            "WED": WeekDay.WED,
             "WEDNESDAY": WeekDay.WED,
+            "THU": WeekDay.THU,
             "THURSDAY": WeekDay.THU,
+            "FRI": WeekDay.FRI,
             "FRIDAY": WeekDay.FRI,
+            "SAT": WeekDay.SAT,
             "SATURDAY": WeekDay.SAT,
+            "SUN": WeekDay.SUN,
             "SUNDAY": WeekDay.SUN,
         }
 
@@ -111,4 +118,18 @@ class AcademicRepository:
         )
         result = await self._session.execute(stmt)
         return result.scalars().unique().one_or_none()
+
+    async def count_enrollments_by_class(self, class_id: str) -> int:
+        """Cuenta los estudiantes inscriptos en una clase."""
+        stmt = select(func.count(Enrollment.id_enrollment)).where(
+            Enrollment.id_class == class_id
+        )
+        result = await self._session.execute(stmt)
+        return result.scalar() or 0
+
+    async def get_enrollments_by_class(self, class_id: str) -> list[Enrollment]:
+        """Obtiene todos los enrollments de una clase."""
+        stmt = select(Enrollment).where(Enrollment.id_class == class_id)
+        result = await self._session.execute(stmt)
+        return list(result.scalars().all())
 

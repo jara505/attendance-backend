@@ -116,3 +116,8 @@ class SQLAlchemySessionRepository(SessionRepositoryPort):
         await self._session.commit()
         await self._session.refresh(session)
         return session
+
+    async def get_by_qr_token(self, qr_token: str) -> Session | None:
+        stmt = select(Session).where(Session.qr_token == qr_token)
+        result = await self._session.execute(stmt)
+        return result.scalar_one_or_none()
