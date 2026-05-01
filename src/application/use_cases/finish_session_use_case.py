@@ -1,4 +1,4 @@
-from datetime import datetime, time
+from datetime import datetime, time, date
 
 from src.infrastructure.models.session_models import SessionStatus, AttendanceMethod, AttendanceStatus
 
@@ -15,9 +15,25 @@ class FinishSessionUseCase:
         if session is None:
             raise SessionNotFoundError()
 
-        # Validar estado (solo puede finish si está ACTIVE)
-        if session.status != SessionStatus.ACTIVE:
+        # Verificar si es del mismo día
+        is_today = session.date == date.today()
+
+        # Solo permitir finish si está ACTIVE o si es de hoy
+        if session.status not in (SessionStatus.ACTIVE, SessionStatus.FINISHED):
             raise InvalidSessionStateError(session.status.value)
+
+        if not is_today:
+            raise InvalidSessionStateError("Cannot finish sessions from past days")
+
+        # Si ya está FINISHED, no hacer nada (ya fue procesada)
+        if session.status == SessionStatus.FINISHED:
+            attendances = await self.attendance_repository.get_by_session(session_id)
+            return {
+                "id_session": session.id_session,
+                "status": session.status.value,
+                "absent_count": 0,
+                "present_count": len(attendances),
+            }
 
         # TODO: Validar que el teacher es owner de la clase
 

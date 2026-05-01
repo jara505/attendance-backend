@@ -45,7 +45,10 @@ async def create_session(
     try:
         return await use_case.execute(request, teacher_id)
     except SessionAlreadyExistsError as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, 
+            detail={"message": str(e), "session_id": e.session_id}
+        )
     except ClassNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except UnauthorizedSessionAccessError as e:
@@ -63,11 +66,13 @@ async def activate_session(
 ):
     from src.infrastructure.repositories.session_repository_impl import SQLAlchemySessionRepository
     from src.infrastructure.repositories.academic_repository import AcademicRepository
+    from src.infrastructure.repositories.teacher_flag_repository_impl import SQLAlchemyTeacherFlagRepository
 
     session_repo = SQLAlchemySessionRepository(session_factory)
     academic_repo = AcademicRepository(session_factory)
+    flag_repo = SQLAlchemyTeacherFlagRepository(session_factory)
 
-    use_case = ActivateSessionUseCase(session_repo, academic_repo)
+    use_case = ActivateSessionUseCase(session_repo, academic_repo, flag_repo)
     try:
         return await use_case.execute(session_id, teacher_id, request.qr_duration_minutes)
     except SessionNotFoundError as e:

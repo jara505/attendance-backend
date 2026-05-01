@@ -38,6 +38,8 @@ class GetTodayClassesUseCase:
                 status=c["status"],
                 qr_available=c["qr_available"],
                 remaining_minutes=c["remaining_minutes"],
+                session_id=c.get("session_id"),
+                session_status=c.get("session_status"),
             )
             for c in classes
         ]

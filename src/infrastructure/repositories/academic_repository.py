@@ -1,4 +1,4 @@
-from datetime import datetime, time
+from datetime import datetime, time, date
 from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -6,6 +6,7 @@ from sqlalchemy.orm import selectinload
 from src.infrastructure.models.class_models import Class, Schedule, WeekDay, Enrollment
 from src.infrastructure.models.academic_models import Course, Group, Subject
 from src.infrastructure.models.class_models import Classroom
+from src.infrastructure.models.session_models import Session, SessionStatus
 
 
 class AcademicRepository:
@@ -60,50 +61,59 @@ class AcademicRepository:
 
         output = []
         for cls in classes:
-            # Obtener el schedule del día
-            schedule = next((s for s in cls.schedules if s.weekday == weekday), None)
-            if not schedule:
+            # Obtener TODOS los schedules del día
+            day_schedules = [s for s in cls.schedules if s.weekday == weekday]
+            if not day_schedules:
                 continue
 
-            # Determinar estado de la clase
-            start = schedule.start_time
-            end = schedule.end_time
+            # Procesar cada schedule (una clase puede tener múltiples horarios)
+            for schedule in day_schedules:
+                # Determinar estado de la clase
+                start = schedule.start_time
+                end = schedule.end_time
 
-            if current_time < start:
-                status = "FUTURE"
-                remaining = int(
-                    (start.hour - current_time.hour) * 60
-                    + (start.minute - current_time.minute)
+                if current_time < start:
+                    status = "FUTURE"
+                    remaining = int(
+                        (start.hour - current_time.hour) * 60
+                        + (start.minute - current_time.minute)
+                    )
+                elif current_time <= end:
+                    status = "ACTIVE"
+                    remaining = int(
+                        (end.hour - current_time.hour) * 60
+                        + (end.minute - current_time.minute)
+                    )
+                else:
+                    status = "PAST"
+                    remaining = None
+
+                # Obtener nombre del curso (via subject -> course)
+                course_name = cls.subject.course.name if cls.subject.course else "N/A"
+
+                # Verificar si hay sesión para hoy
+                session = await self.get_session_by_class_and_date(cls.id_class, date.today())
+                session_id = session.id_session if session else None
+                session_status = session.status.value if session else None
+
+                output.append(
+                    {
+                        "id_class": cls.id_class,
+                        "course": course_name,
+                        "group": cls.group.code if cls.group else "N/A",
+                        "subject": cls.subject.name if cls.subject else "N/A",
+                        "classroom": schedule.classroom.id_classroom
+                        if schedule.classroom
+                        else "N/A",
+                        "start_time": start.strftime("%H:%M"),
+                        "end_time": end.strftime("%H:%M"),
+                        "status": status,
+                        "qr_available": status != "PAST",
+                        "remaining_minutes": remaining if status != "PAST" else None,
+                        "session_id": session_id,
+                        "session_status": session_status,
+                    }
                 )
-            elif current_time <= end:
-                status = "ACTIVE"
-                remaining = int(
-                    (end.hour - current_time.hour) * 60
-                    + (end.minute - current_time.minute)
-                )
-            else:
-                status = "PAST"
-                remaining = None
-
-            # Obtener nombre del curso (via subject -> course)
-            course_name = cls.subject.course.name if cls.subject.course else "N/A"
-
-            output.append(
-                {
-                    "id_class": cls.id_class,
-                    "course": course_name,
-                    "group": cls.group.code if cls.group else "N/A",
-                    "subject": cls.subject.name if cls.subject else "N/A",
-                    "classroom": schedule.classroom.id_classroom
-                    if schedule.classroom
-                    else "N/A",
-                    "start_time": start.strftime("%H:%M"),
-                    "end_time": end.strftime("%H:%M"),
-                    "status": status,
-                    "qr_available": status != "PAST",
-                    "remaining_minutes": remaining if status != "PAST" else None,
-                }
-            )
 
         # Ordenar por hora de inicio
         output.sort(key=lambda x: x["start_time"])
@@ -132,4 +142,17 @@ class AcademicRepository:
         stmt = select(Enrollment).where(Enrollment.id_class == class_id)
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
+
+    async def get_session_by_class_and_date(
+        self, class_id: str, session_date: date
+    ) -> Session | None:
+        """Obtiene la sesión de una clase para una fecha específica."""
+        stmt = select(Session).where(
+            and_(
+                Session.id_class == class_id,
+                Session.date == session_date
+            )
+        )
+        result = await self._session.execute(stmt)
+        return result.scalar_one_or_none()
 
