@@ -9,6 +9,12 @@ class ClassStatus(str, Enum):
     PAST = "PAST"
 
 
+class SessionStatus(str, Enum):
+    SCHEDULED = "SCHEDULED"
+    ACTIVE = "ACTIVE"
+    FINISHED = "FINISHED"
+
+
 class TodayClassDTO(BaseModel):
     id_class: str
     course: str
@@ -20,6 +26,8 @@ class TodayClassDTO(BaseModel):
     status: ClassStatus
     qr_available: bool
     remaining_minutes: int | None = None
+    session_id: str | None = None
+    session_status: SessionStatus | None = None
 
 
 class TodayClassesResponse(BaseModel):

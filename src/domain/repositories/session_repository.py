@@ -59,3 +59,11 @@ class SessionRepositoryPort(ABC):
     @abstractmethod
     async def get_by_qr_token(self, qr_token: str) -> Session | None:
         raise NotImplementedError
+
+    @abstractmethod
+    async def reopen(self, session_id: str) -> Session:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def update_extended_mode(self, session_id: str, extended: bool) -> Session:
+        raise NotImplementedError

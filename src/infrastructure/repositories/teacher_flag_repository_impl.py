@@ -35,7 +35,7 @@ class SQLAlchemyTeacherFlagRepository(TeacherFlagRepositoryPort):
         stmt = select(func.count()).where(
             and_(
                 TeacherFlag.id_teacher == id_teacher,
-                TeacherFlag.reason == "EXTENDED_MODE",
+                TeacherFlag.reason.in_(["EXTENDED_MODE", "REOPEN_MODE"]),
                 cast(TeacherFlag.creation_date, String).like(f"{today}%"),
             )
         )

@@ -29,13 +29,17 @@ class SessionAlreadyFinishedError(Exception):
 
 
 class SessionAlreadyExistsError(Exception):
-    def __init__(self, class_id: str, session_date: str) -> None:
+    def __init__(self, class_id: str, session_date: str, session_id: str | None = None) -> None:
+        self.session_id = session_id
         super().__init__(f"Session already exists for class '{class_id}' on date '{session_date}'")
 
 
 class ExtendedModeNotAllowedError(Exception):
-    def __init__(self) -> None:
-        super().__init__("Extended mode not allowed: session not active or already extended")
+    def __init__(self, message: str | None = None) -> None:
+        if message:
+            super().__init__(message)
+        else:
+            super().__init__("Extended mode not allowed: session not active or already extended")
 
 
 class QRCodeExpiredError(Exception):

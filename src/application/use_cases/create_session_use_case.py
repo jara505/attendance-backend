@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 from src.application.dtos.session_dto import CreateSessionRequest, SessionResponse
 from src.domain.exceptions.session_exceptions import (
     ClassNotFoundError,
@@ -34,10 +34,11 @@ class CreateSessionUseCase:
             6: WeekDay.SUN,
         }
 
-        # Solo permitir crear sesión para hoy
-        if request.session_date != date.today():
+        # Solo permitir crear sesión para hoy (o permitir cualquier fecha si el schedule existe)
+        # Por ahora aceptar cualquier fecha que coincida con el schedule
+        if request.session_date > date.today() + timedelta(days=7):
             raise SessionDateInPastError(
-                f"Session must be created for today ({date.today()}), not {request.session_date}"
+                f"Cannot create session for date {request.session_date}"
             )
 
         session_weekday = weekday_map[request.session_date.weekday()]
@@ -53,7 +54,11 @@ class CreateSessionUseCase:
             request.id_class, request.session_date
         )
         if existing_session is not None:
-            raise SessionAlreadyExistsError(request.id_class, str(request.session_date))
+            raise SessionAlreadyExistsError(
+                request.id_class, 
+                str(request.session_date),
+                existing_session.id_session
+            )
 
         session = await self.repository.create(
             id_class=request.id_class,

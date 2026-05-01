@@ -95,6 +95,7 @@ class SQLAlchemySessionRepository(SessionRepositoryPort):
         
         session.status = SessionStatus.FINISHED
         session.actual_end_time = actual_end_time
+        # Mantener extended_mode si ya estaba extendido
         
         await self._session.commit()
         await self._session.refresh(session)
@@ -121,3 +122,32 @@ class SQLAlchemySessionRepository(SessionRepositoryPort):
         stmt = select(Session).where(Session.qr_token == qr_token)
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
+
+    async def reopen(self, session_id: str) -> Session:
+        """Reabre una sesión FINISHED para permitir reingreso."""
+        stmt = select(Session).where(Session.id_session == session_id)
+        result = await self._session.execute(stmt)
+        session = result.scalar_one()
+        
+        # Preservar extended_mode si ya estaba extendido
+        was_extended = session.extended_mode
+        
+        session.status = SessionStatus.ACTIVE
+        session.actual_end_time = None
+        session.extended_mode = was_extended
+        
+        await self._session.commit()
+        await self._session.refresh(session)
+        return session
+
+    async def update_extended_mode(self, session_id: str, extended: bool) -> Session:
+        """Actualiza el modo extendido."""
+        stmt = select(Session).where(Session.id_session == session_id)
+        result = await self._session.execute(stmt)
+        session = result.scalar_one()
+        
+        session.extended_mode = extended
+        
+        await self._session.commit()
+        await self._session.refresh(session)
+        return session

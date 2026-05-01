@@ -30,13 +30,11 @@ app = FastAPI(
 )
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origin_regex=".*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-# Registrado después de CORS → queda como middleware interno: comprime
-# la respuesta antes de que CORS agregue sus headers.
 app.add_middleware(GZipMiddleware, minimum_size=500)
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(academic_router, prefix="/api/v1")
