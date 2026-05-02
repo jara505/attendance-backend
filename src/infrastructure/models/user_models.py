@@ -48,6 +48,7 @@ class Student(Base):
     )
     deleted_at: Mapped[datetime | None] = mapped_column(default=None)
     editable_fields: Mapped[str | None] = mapped_column(String, default=None)
+    photo_url: Mapped[str | None] = mapped_column(String, default=None)
 
     user: Mapped["User"] = relationship(back_populates="student")
     course: Mapped["Course"] = relationship(back_populates="students")  # noqa: F821
@@ -75,6 +76,7 @@ class Teacher(Base):
     teacher_flag: Mapped[bool] = mapped_column(default=False)
     must_change_password: Mapped[bool] = mapped_column(default=True)
     deleted_at: Mapped[datetime | None] = mapped_column(default=None)
+    photo_url: Mapped[str | None] = mapped_column(String, default=None)
 
     user: Mapped["User"] = relationship(back_populates="teacher")
     classes: Mapped[list["Class"]] = relationship(back_populates="teacher")  # noqa: F821
