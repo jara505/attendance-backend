@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import ORJSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from src.infrastructure.database import engine, Base
 import src.infrastructure.models  # noqa: F401
@@ -36,6 +37,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.add_middleware(GZipMiddleware, minimum_size=500)
+
+# Serve uploaded files
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(academic_router, prefix="/api/v1")
 app.include_router(profile_router, prefix="/api/v1")

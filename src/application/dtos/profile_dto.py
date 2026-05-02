@@ -10,6 +10,7 @@ class TeacherProfileDTO(UserProfileDTO):
     first_name: str
     last_name: str
     teacher_card: str
+    photo_url: str | None = None
 
 
 class StudentProfileDTO(UserProfileDTO):
@@ -17,6 +18,7 @@ class StudentProfileDTO(UserProfileDTO):
     last_name: str
     student_card: str
     course: str
+    photo_url: str | None = None
 
 
 class AdminProfileDTO(UserProfileDTO):

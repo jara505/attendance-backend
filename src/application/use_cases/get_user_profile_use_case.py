@@ -37,6 +37,7 @@ class GetUserProfileUseCase:
                 first_name=teacher.first_name,
                 last_name=teacher.last_name,
                 teacher_card=teacher.teacher_card,
+                photo_url=teacher.photo_url,
             ).model_dump()
         
         elif user.role == UserRole.STUDENT:
@@ -57,6 +58,7 @@ class GetUserProfileUseCase:
                 last_name=student.last_name,
                 student_card=student.student_card,
                 course=course_name,
+                photo_url=student.photo_url,
             ).model_dump()
         
         else:  # ADMIN
