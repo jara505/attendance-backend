@@ -78,7 +78,7 @@ class Period(Base):
         String, primary_key=True, default=lambda: str(uuid4())
     )
     year: Mapped[int] = mapped_column(nullable=False)
-    cycle: Mapped[CycleEnum] = mapped_column(nullable=False)
+    cycle: Mapped[int] = mapped_column(nullable=False)
     start_date: Mapped[date | None] = mapped_column(default=None)
     end_date: Mapped[date | None] = mapped_column(default=None)
 
