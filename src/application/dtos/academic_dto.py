@@ -33,3 +33,30 @@ class TodayClassDTO(BaseModel):
 class TodayClassesResponse(BaseModel):
     classes: list[TodayClassDTO]
     date: str
+
+
+# Student Attendance DTOs
+class SubjectAttendanceSummary(BaseModel):
+    subject_id: str
+    subject_name: str
+    present: int
+    absent: int
+    late: int
+    percentage: int
+    status: str  # "OK" or "ALERTA"
+
+
+class SemesterAttendanceResponse(BaseModel):
+    semester: str
+    courses: list[SubjectAttendanceSummary]
+
+
+class DayAttendance(BaseModel):
+    day: int
+    status: str | None  # "PRESENT", "ABSENT", "LATE", "JUSTIFIED", or null
+
+
+class SubjectAttendanceDetail(BaseModel):
+    subject_name: str
+    month: str
+    days: list[DayAttendance]
