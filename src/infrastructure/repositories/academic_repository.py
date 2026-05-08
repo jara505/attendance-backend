@@ -156,3 +156,111 @@ class AcademicRepository:
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
 
+    async def get_today_classes_by_student(
+        self, student_id: str, current_time: time, current_weekday: str
+    ) -> list[dict]:
+        """
+        Obtiene las clases del estudiante para el día actual.
+        Retorna lista de diccionarios con datos necesarios.
+        """
+        weekday_map = {
+            "MON": WeekDay.MON,
+            "MONDAY": WeekDay.MON,
+            "TUE": WeekDay.TUE,
+            "TUESDAY": WeekDay.TUE,
+            "WED": WeekDay.WED,
+            "WEDNESDAY": WeekDay.WED,
+            "THU": WeekDay.THU,
+            "THURSDAY": WeekDay.THU,
+            "FRI": WeekDay.FRI,
+            "FRIDAY": WeekDay.FRI,
+            "SAT": WeekDay.SAT,
+            "SATURDAY": WeekDay.SAT,
+            "SUN": WeekDay.SUN,
+            "SUNDAY": WeekDay.SUN,
+        }
+
+        weekday = weekday_map.get(current_weekday.upper(), WeekDay.MON)
+
+        # Obtener las clases del estudiante
+        stmt_enroll = select(Enrollment.id_class).where(Enrollment.id_student == student_id)
+        result = await self._session.execute(stmt_enroll)
+        class_ids = [row[0] for row in result.fetchall()]
+
+        if not class_ids:
+            return []
+
+        # Query: clases del estudiante con schedule para el día actual
+        stmt = (
+            select(Class)
+            .options(
+                selectinload(Class.subject).selectinload(Subject.course),
+                selectinload(Class.group),
+                selectinload(Class.schedules).selectinload(Schedule.classroom),
+            )
+            .where(
+                and_(
+                    Class.id_class.in_(class_ids),
+                    Class.schedules.any(Schedule.weekday == weekday),
+                )
+            )
+        )
+
+        result = await self._session.execute(stmt)
+        classes = result.scalars().unique().all()
+
+        output = []
+        for cls in classes:
+            day_schedules = [s for s in cls.schedules if s.weekday == weekday]
+            if not day_schedules:
+                continue
+
+            for schedule in day_schedules:
+                start = schedule.start_time
+                end = schedule.end_time
+
+                if current_time < start:
+                    status = "FUTURE"
+                    remaining = int(
+                        (start.hour - current_time.hour) * 60
+                        + (start.minute - current_time.minute)
+                    )
+                elif current_time <= end:
+                    status = "ACTIVE"
+                    remaining = int(
+                        (end.hour - current_time.hour) * 60
+                        + (end.minute - current_time.minute)
+                    )
+                else:
+                    status = "PAST"
+                    remaining = None
+
+                course_name = cls.subject.course.name if cls.subject.course else "N/A"
+
+                # Verificar si hay sesión para hoy
+                session = await self.get_session_by_class_and_date(cls.id_class, date.today())
+                session_id = session.id_session if session else None
+                session_status = session.status.value if session else None
+
+                output.append(
+                    {
+                        "id_class": cls.id_class,
+                        "course": course_name,
+                        "group": cls.group.code if cls.group else "N/A",
+                        "subject": cls.subject.name if cls.subject else "N/A",
+                        "classroom": schedule.classroom.id_classroom
+                        if schedule.classroom
+                        else "N/A",
+                        "start_time": start.strftime("%H:%M"),
+                        "end_time": end.strftime("%H:%M"),
+                        "status": status,
+                        "qr_available": status != "PAST",
+                        "remaining_minutes": remaining if status != "PAST" else None,
+                        "session_id": session_id,
+                        "session_status": session_status,
+                    }
+                )
+
+        output.sort(key=lambda x: x["start_time"])
+        return output
+
