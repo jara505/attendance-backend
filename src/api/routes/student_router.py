@@ -128,6 +128,8 @@ async def get_student_today_classes(
             remaining_minutes=c["remaining_minutes"],
             session_id=c.get("session_id"),
             session_status=c.get("session_status"),
+            can_check_in=c.get("can_check_in", False),
+            extended_mode=c.get("extended_mode", False),
         )
         for c in classes
     ]

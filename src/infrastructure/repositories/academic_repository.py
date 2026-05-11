@@ -96,6 +96,14 @@ class AcademicRepository:
                 session_id = session.id_session if session else None
                 session_status = session.status.value if session else None
 
+                # Determine if student can check in
+                can_check_in = False
+                if session:
+                    if session.status.value == "ACTIVE":
+                        can_check_in = True
+                    elif session.status.value == "FINISHED" and session.extended_mode:
+                        can_check_in = True
+
                 output.append(
                     {
                         "id_class": cls.id_class,
@@ -112,6 +120,8 @@ class AcademicRepository:
                         "remaining_minutes": remaining if status != "PAST" else None,
                         "session_id": session_id,
                         "session_status": session_status,
+                        "can_check_in": can_check_in,
+                        "extended_mode": session.extended_mode if session else False,
                     }
                 )
 
@@ -242,6 +252,14 @@ class AcademicRepository:
                 session_id = session.id_session if session else None
                 session_status = session.status.value if session else None
 
+                # Determine if student can check in
+                can_check_in = False
+                if session:
+                    if session.status.value == "ACTIVE":
+                        can_check_in = True
+                    elif session.status.value == "FINISHED" and session.extended_mode:
+                        can_check_in = True
+
                 output.append(
                     {
                         "id_class": cls.id_class,
@@ -258,6 +276,8 @@ class AcademicRepository:
                         "remaining_minutes": remaining if status != "PAST" else None,
                         "session_id": session_id,
                         "session_status": session_status,
+                        "can_check_in": can_check_in,
+                        "extended_mode": session.extended_mode if session else False,
                     }
                 )
 

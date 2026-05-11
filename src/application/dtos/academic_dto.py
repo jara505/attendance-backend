@@ -28,6 +28,8 @@ class TodayClassDTO(BaseModel):
     remaining_minutes: int | None = None
     session_id: str | None = None
     session_status: SessionStatus | None = None
+    can_check_in: bool = False
+    extended_mode: bool = False
 
 
 class TodayClassesResponse(BaseModel):
