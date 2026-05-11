@@ -48,6 +48,7 @@ class QRResponse(BaseModel):
 class ExtendSessionResponse(BaseModel):
     id_session: str
     extended_mode: bool
+    qr_token: str | None = None
     qr_expires: str | None = None
     extensions_today: int
 

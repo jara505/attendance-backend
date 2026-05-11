@@ -28,11 +28,15 @@ class ExtendSessionUseCase:
         if not is_today:
             raise ExtendedModeNotAllowedError("Cannot extend sessions from past days")
 
-        if session.extended_mode and session.status.value == "FINISHED":
-            raise ExtendedModeNotAllowedError("Session already extended")
+        # Permitir múltiples extensiones por sesión: el límite real es threshold_per_day.
 
-        # Solo permitir extendido si el QR expiró o está por expirar (1 min antes)
-        if session.closes_at and session.closes_at > datetime.now():
+        # Solo bloquear si la sesión está ACTIVE y el QR aún no expiró
+        # (si está FINISHED, permitir extender aunque closes_at no haya pasado: el teacher la cerró antes)
+        if (
+            session.status.value == "ACTIVE"
+            and session.closes_at
+            and session.closes_at > datetime.now()
+        ):
             raise ExtendedModeNotAllowedError()
 
         # Verificar umbral del teacher hoy
@@ -60,6 +64,7 @@ class ExtendSessionUseCase:
         return ExtendSessionResponse(
             id_session=session.id_session,
             extended_mode=session.extended_mode,
+            qr_token=session.qr_token,
             qr_expires=session.closes_at.isoformat() if session.closes_at else None,
             extensions_today=extensions_today + 1,
         )

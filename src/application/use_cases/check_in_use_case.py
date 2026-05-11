@@ -37,7 +37,9 @@ class CheckInUseCase:
         existing = await self.attendance_repository.get_by_session_and_student(
             session.id_session, student_id
         )
-        if existing is not None:
+        # Si ya está PRESENT/LATE/JUSTIFIED, no se permite re-registrar.
+        # Si está ABSENT (marcado al finalizar la sesión), se promueve durante el modo extendido.
+        if existing is not None and existing.status != AttendanceStatus.ABSENT:
             raise AlreadyCheckedInError()
 
         # Determinar si es tardanza (más de 15 min después del inicio)
@@ -50,16 +52,27 @@ class CheckInUseCase:
             if now_minutes - start_minutes > 15:
                 status = AttendanceStatus.LATE
 
-        # Registrar asistencia
-        attendance = await self.attendance_repository.create(
-            session_id=session.id_session,
-            student_id=student_id,
-            status=status,
-            method="QR",
-            ip_address=ip_address,
-            latitude=latitude,
-            longitude=longitude,
-        )
+        if existing is not None and existing.status == AttendanceStatus.ABSENT:
+            # Promover ABSENT → PRESENT/LATE (caso modo extendido)
+            attendance = await self.attendance_repository.promote_absent(
+                attendance_id=existing.id_attendance,
+                status=status,
+                method="QR",
+                ip_address=ip_address,
+                latitude=latitude,
+                longitude=longitude,
+            )
+        else:
+            # Registrar asistencia nueva
+            attendance = await self.attendance_repository.create(
+                session_id=session.id_session,
+                student_id=student_id,
+                status=status,
+                method="QR",
+                ip_address=ip_address,
+                latitude=latitude,
+                longitude=longitude,
+            )
 
         return CheckInResponse(
             id_attendance=attendance.id_attendance,
