@@ -111,8 +111,11 @@ class SQLAlchemySessionRepository(SessionRepositoryPort):
         session = result.scalar_one()
         
         session.extended_mode = True
-        if session.closes_at:
-            session.closes_at = session.closes_at + timedelta(minutes=extension_minutes)
+        # Anclar siempre el nuevo cierre al futuro: si closes_at quedó en el pasado
+        # (por ejemplo, sesión finalizada temprano), partir desde ahora.
+        now = datetime.now()
+        base = session.closes_at if session.closes_at and session.closes_at > now else now
+        session.closes_at = base + timedelta(minutes=extension_minutes)
         
         await self._session.commit()
         await self._session.refresh(session)

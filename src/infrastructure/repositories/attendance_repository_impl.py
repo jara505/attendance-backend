@@ -53,6 +53,30 @@ class SQLAlchemyAttendanceRepository(AttendanceRepositoryPort):
         await self._session.refresh(attendance)
         return attendance
 
+    async def promote_absent(
+        self,
+        attendance_id: str,
+        status: AttendanceStatus,
+        method: str,
+        ip_address: str | None = None,
+        latitude: float | None = None,
+        longitude: float | None = None,
+    ) -> Attendance:
+        stmt = select(Attendance).where(Attendance.id_attendance == attendance_id)
+        result = await self._session.execute(stmt)
+        attendance = result.scalar_one()
+
+        attendance.status = status
+        attendance.method = AttendanceMethod(method)
+        attendance.record_date = datetime.now()
+        attendance.ip_address = ip_address
+        attendance.latitude = latitude
+        attendance.longitude = longitude
+
+        await self._session.commit()
+        await self._session.refresh(attendance)
+        return attendance
+
     async def get_by_session(self, session_id: str) -> list[Attendance]:
         stmt = select(Attendance).where(Attendance.id_session == session_id)
         result = await self._session.execute(stmt)
