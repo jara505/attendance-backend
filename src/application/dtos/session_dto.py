@@ -26,12 +26,13 @@ class SessionResponse(BaseModel):
     actual_end_time: time | None = None
     qr_token: str | None = None
     qr_expires: str | None = None
+    session_ends_at: str | None = None
     extended_mode: bool = False
     total_students: int = 0
 
 
 class ActivateSessionRequest(BaseModel):
-    qr_duration_minutes: int = 10
+    qr_duration_minutes: int = 15
 
 
 class ExtendSessionRequest(BaseModel):
@@ -45,11 +46,18 @@ class QRResponse(BaseModel):
     session_id: str
 
 
+class RefreshQRResponse(BaseModel):
+    qr_token: str
+    qr_expires: str
+    session_ends_at: str | None = None
+
+
 class ExtendSessionResponse(BaseModel):
     id_session: str
     extended_mode: bool
     qr_token: str | None = None
     qr_expires: str | None = None
+    session_ends_at: str | None = None
     extensions_today: int
 
 

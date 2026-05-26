@@ -30,6 +30,10 @@ class CheckInUseCase:
             raise SessionNotActiveError(session.status.value)
 
         # Validar que el QR no haya expirado
+        if session.qr_expires and datetime.now() > session.qr_expires:
+            raise QRExpiredError()
+
+        # Validar que la sesión no haya terminado (closes_at)
         if session.closes_at and datetime.now() > session.closes_at:
             raise QRExpiredError()
 

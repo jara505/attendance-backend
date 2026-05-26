@@ -69,6 +69,7 @@ class SQLAlchemySessionRepository(SessionRepositoryPort):
         qr_token: str,
         opens_at: datetime,
         closes_at: datetime,
+        qr_expires: datetime,
     ) -> Session:
         stmt = select(Session).where(Session.id_session == session_id)
         result = await self._session.execute(stmt)
@@ -79,7 +80,28 @@ class SQLAlchemySessionRepository(SessionRepositoryPort):
         session.qr_token = qr_token
         session.opens_at = opens_at
         session.closes_at = closes_at
+        session.qr_expires = qr_expires
         
+        await self._session.commit()
+        await self._session.refresh(session)
+        return session
+
+    async def refresh_qr(
+        self,
+        session_id: str,
+        qr_token: str,
+        opens_at: datetime,
+        qr_expires: datetime,
+    ) -> Session:
+        stmt = select(Session).where(Session.id_session == session_id)
+        result = await self._session.execute(stmt)
+        session = result.scalar_one()
+
+        session.qr_token = qr_token
+        session.opens_at = opens_at
+        session.qr_expires = qr_expires
+        # closes_at intencionalmente NO se modifica: el fin de sesión no cambia al refrescar QR.
+
         await self._session.commit()
         await self._session.refresh(session)
         return session
@@ -105,6 +127,7 @@ class SQLAlchemySessionRepository(SessionRepositoryPort):
         self,
         session_id: str,
         extension_minutes: int,
+        qr_expires: datetime | None = None,
     ) -> Session:
         stmt = select(Session).where(Session.id_session == session_id)
         result = await self._session.execute(stmt)
@@ -116,6 +139,8 @@ class SQLAlchemySessionRepository(SessionRepositoryPort):
         now = datetime.now()
         base = session.closes_at if session.closes_at and session.closes_at > now else now
         session.closes_at = base + timedelta(minutes=extension_minutes)
+        if qr_expires is not None:
+            session.qr_expires = qr_expires
         
         await self._session.commit()
         await self._session.refresh(session)

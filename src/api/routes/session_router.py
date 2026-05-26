@@ -6,10 +6,12 @@ from src.application.dtos.session_dto import (
     ActivateSessionRequest,
     ExtendSessionResponse,
     AttendanceSummaryResponse,
+    RefreshQRResponse,
 )
 from src.application.use_cases.create_session_use_case import CreateSessionUseCase
 from src.application.use_cases.activate_session_use_case import ActivateSessionUseCase
 from src.application.use_cases.extend_session_use_case import ExtendSessionUseCase
+from src.application.use_cases.refresh_qr_use_case import RefreshQRUseCase
 from src.application.use_cases.get_attendance_summary_use_case import GetAttendanceSummaryUseCase
 from src.application.use_cases.finish_session_use_case import FinishSessionUseCase
 from src.api.dependencies import get_current_teacher_id, get_session
@@ -60,7 +62,7 @@ async def create_session(
 @router.post("/{session_id}/activate", response_model=SessionResponse)
 async def activate_session(
     session_id: str,
-    request: ActivateSessionRequest,
+    request: ActivateSessionRequest | None = None,
     teacher_id: str = Depends(get_current_teacher_id),
     session_factory=Depends(get_session),
 ):
@@ -73,10 +75,32 @@ async def activate_session(
     flag_repo = SQLAlchemyTeacherFlagRepository(session_factory)
 
     use_case = ActivateSessionUseCase(session_repo, academic_repo, flag_repo)
+    qr_duration = request.qr_duration_minutes if request else 15
     try:
-        return await use_case.execute(session_id, teacher_id, request.qr_duration_minutes)
+        return await use_case.execute(session_id, teacher_id, qr_duration)
     except SessionNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except InvalidSessionStateError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+
+
+@router.post("/{session_id}/refresh-qr", response_model=RefreshQRResponse)
+async def refresh_qr(
+    session_id: str,
+    request: ActivateSessionRequest | None = None,
+    teacher_id: str = Depends(get_current_teacher_id),
+    session_factory=Depends(get_session),
+):
+    session_repo = SQLAlchemySessionRepository(session_factory)
+
+    use_case = RefreshQRUseCase(session_repo)
+    qr_duration = request.qr_duration_minutes if request else 15
+    try:
+        return await use_case.execute(session_id, qr_duration)
+    except SessionNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except UnauthorizedSessionAccessError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
     except InvalidSessionStateError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
 
