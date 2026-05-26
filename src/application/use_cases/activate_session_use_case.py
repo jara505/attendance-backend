@@ -1,3 +1,4 @@
+import datetime as dt
 from uuid import uuid4
 from datetime import date
 
@@ -10,13 +11,17 @@ from src.domain.exceptions.session_exceptions import (
 from src.infrastructure.models.session_models import SessionStatus
 
 
+QR_EXPIRES_SECONDS = 15
+SESSION_DURATION_MINUTES = 10
+
+
 class ActivateSessionUseCase:
     def __init__(self, session_repository, academic_repository, flag_repository=None):
         self.session_repository = session_repository
         self.academic_repository = academic_repository
         self.flag_repository = flag_repository
 
-    async def execute(self, session_id: str, teacher_id: str, qr_duration_minutes: int = 10) -> SessionResponse:
+    async def execute(self, session_id: str, teacher_id: str, qr_duration_minutes: int = QR_EXPIRES_SECONDS) -> SessionResponse:
         # Obtener sesión
         session = await self.session_repository.get_by_id(session_id)
         if session is None:
@@ -36,7 +41,8 @@ class ActivateSessionUseCase:
                 status=SessionStatusEnum(session.status.value),
                 actual_start_time=session.actual_start_time,
                 qr_token=session.qr_token,
-                qr_expires=session.closes_at.isoformat() if session.closes_at else None,
+                qr_expires=session.qr_expires.isoformat() if session.qr_expires else None,
+                session_ends_at=session.closes_at.isoformat() if session.closes_at else None,
                 total_students=total_students,
             )
 
@@ -70,19 +76,19 @@ class ActivateSessionUseCase:
         # Generar QR token
         qr_token = str(uuid4())
 
-        # Activar
-        import datetime as dt
+        # Activar: QR expira en 15s, sesión termina en 10min
         now = dt.datetime.now()
         opens_at = now
-        closes_at = now + dt.timedelta(minutes=qr_duration_minutes)
+        qr_expires = now + dt.timedelta(seconds=QR_EXPIRES_SECONDS)
+        closes_at = now + dt.timedelta(minutes=SESSION_DURATION_MINUTES)
 
-        from datetime import time
         session = await self.session_repository.activate(
             session_id=session_id,
             actual_start_time=now.time(),
             qr_token=qr_token,
             opens_at=opens_at,
             closes_at=closes_at,
+            qr_expires=qr_expires,
         )
 
         # Obtener total de estudiantes inscriptos
@@ -96,6 +102,7 @@ class ActivateSessionUseCase:
             status=session.status,
             actual_start_time=session.actual_start_time,
             qr_token=session.qr_token,
-            qr_expires=session.closes_at.isoformat() if session.closes_at else None,
+            qr_expires=session.qr_expires.isoformat() if session.qr_expires else None,
+            session_ends_at=session.closes_at.isoformat() if session.closes_at else None,
             total_students=total_students,
         )

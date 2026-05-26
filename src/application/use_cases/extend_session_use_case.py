@@ -1,3 +1,4 @@
+import datetime as dt
 from datetime import date, datetime
 from src.application.dtos.session_dto import ExtendSessionResponse
 from src.domain.exceptions.session_exceptions import (
@@ -5,6 +6,10 @@ from src.domain.exceptions.session_exceptions import (
     InvalidSessionStateError,
     ExtendedModeNotAllowedError,
 )
+
+
+QR_EXPIRES_SECONDS = 15
+EXTENSION_MINUTES = 10
 
 
 class ExtendSessionUseCase:
@@ -31,11 +36,11 @@ class ExtendSessionUseCase:
         # Permitir múltiples extensiones por sesión: el límite real es threshold_per_day.
 
         # Solo bloquear si la sesión está ACTIVE y el QR aún no expiró
-        # (si está FINISHED, permitir extender aunque closes_at no haya pasado: el teacher la cerró antes)
+        # (si está FINISHED, permitir extender aunque el QR no haya expirado: el teacher la cerró antes)
         if (
             session.status.value == "ACTIVE"
-            and session.closes_at
-            and session.closes_at > datetime.now()
+            and session.qr_expires
+            and session.qr_expires > datetime.now()
         ):
             raise ExtendedModeNotAllowedError()
 
@@ -48,11 +53,16 @@ class ExtendSessionUseCase:
 
         # Reabrir si estaba FINISHED
         if session.status.value == "FINISHED":
-            from src.infrastructure.models.session_models import SessionStatus
             await self.session_repository.reopen(session_id)
 
-        # Extender 5 minutos
-        session = await self.session_repository.extend(session_id, 5)
+        # Extender la sesión 10 minutos más y refrescar QR (expira en 15s)
+        now = dt.datetime.now()
+        qr_expires = now + dt.timedelta(seconds=QR_EXPIRES_SECONDS)
+        session = await self.session_repository.extend(
+            session_id,
+            EXTENSION_MINUTES,
+            qr_expires=qr_expires,
+        )
 
         # Crear flag
         await self.flag_repository.create_flag(
@@ -65,6 +75,7 @@ class ExtendSessionUseCase:
             id_session=session.id_session,
             extended_mode=session.extended_mode,
             qr_token=session.qr_token,
-            qr_expires=session.closes_at.isoformat() if session.closes_at else None,
+            qr_expires=session.qr_expires.isoformat() if session.qr_expires else None,
+            session_ends_at=session.closes_at.isoformat() if session.closes_at else None,
             extensions_today=extensions_today + 1,
         )

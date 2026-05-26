@@ -37,6 +37,17 @@ class SessionRepositoryPort(ABC):
         qr_token: str,
         opens_at: datetime,
         closes_at: datetime,
+        qr_expires: datetime,
+    ) -> Session:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def refresh_qr(
+        self,
+        session_id: str,
+        qr_token: str,
+        opens_at: datetime,
+        qr_expires: datetime,
     ) -> Session:
         raise NotImplementedError
 
@@ -53,6 +64,7 @@ class SessionRepositoryPort(ABC):
         self,
         session_id: str,
         extension_minutes: int,
+        qr_expires: datetime | None = None,
     ) -> Session:
         raise NotImplementedError
 

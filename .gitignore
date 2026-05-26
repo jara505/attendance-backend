@@ -2,3 +2,6 @@ __pycache__/
 *.pyc
 .env
 database.db
+
+# Backup files
+*.bak
