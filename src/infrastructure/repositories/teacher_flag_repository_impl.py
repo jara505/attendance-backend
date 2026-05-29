@@ -1,7 +1,7 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from uuid import uuid4
 
-from sqlalchemy import select, and_, func, cast, String
+from sqlalchemy import select, and_, func, cast, Date
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domain.repositories.teacher_flag_repository import TeacherFlagRepositoryPort
@@ -36,7 +36,7 @@ class SQLAlchemyTeacherFlagRepository(TeacherFlagRepositoryPort):
             and_(
                 TeacherFlag.id_teacher == id_teacher,
                 TeacherFlag.reason.in_(["EXTENDED_MODE", "REOPEN_MODE"]),
-                cast(TeacherFlag.creation_date, String).like(f"{today}%"),
+                cast(TeacherFlag.creation_date, Date) == today,
             )
         )
         result = await self._session.execute(stmt)

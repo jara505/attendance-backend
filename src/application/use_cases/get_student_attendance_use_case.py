@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 from collections import defaultdict
 
 from sqlalchemy import select, func
@@ -25,21 +25,33 @@ class GetStudentAttendanceUseCase:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def get_semester_summary(self, student_id: str, year: int) -> SemesterAttendanceResponse:
+    async def get_semester_summary(
+        self, student_id: str, year: int
+    ) -> SemesterAttendanceResponse:
         """
         Obtiene el resumen de asistencia por materia para un semestre.
         """
-        # Obtener el período (semestre) - buscar cualquier ciclo
-        stmt_period = select(Period).where(Period.year == year)
+        # Obtener el período activo según la fecha actual
+        now = datetime.now()
+        stmt_period = (
+            select(Period)
+            .where(Period.year == year)
+            .where(Period.start_date <= now.date())
+            .where(Period.end_date >= now.date())
+        )
         period = (await self.session.execute(stmt_period)).scalar_one_or_none()
+
+        # Si no hay período activo (ej. entre semestres), tomar el primero del año
+        if not period:
+            stmt_period = select(Period).where(Period.year == year).limit(1)
+            period = (await self.session.execute(stmt_period)).scalar_one_or_none()
 
         if not period:
             return SemesterAttendanceResponse(semester=str(year), courses=[])
 
         # Obtener las materias del estudiante
-        stmt_enrollments = (
-            select(Enrollment.id_class)
-            .where(Enrollment.id_student == student_id)
+        stmt_enrollments = select(Enrollment.id_class).where(
+            Enrollment.id_student == student_id
         )
         result = await self.session.execute(stmt_enrollments)
         class_ids = [row[0] for row in result.fetchall()]
@@ -61,7 +73,9 @@ class GetStudentAttendanceUseCase:
 
         for cls, subject in classes_data:
             # Obtener sesiones de la clase
-            stmt_sessions = select(Session.id_session).where(Session.id_class == cls.id_class)
+            stmt_sessions = select(Session.id_session).where(
+                Session.id_class == cls.id_class
+            )
             result = await self.session.execute(stmt_sessions)
             session_ids = [row[0] for row in result.fetchall()]
 
@@ -95,7 +109,9 @@ class GetStudentAttendanceUseCase:
             justified = attendance_counts.get("JUSTIFIED", 0)
 
             total = present + absent + late + justified
-            percentage = int((present + late + justified) / total * 100) if total > 0 else 100
+            percentage = (
+                int((present + late + justified) / total * 100) if total > 0 else 100
+            )
             status = "OK" if percentage >= 80 else "ALERTA"
 
             summary_list.append(
@@ -147,11 +163,11 @@ class GetStudentAttendanceUseCase:
             )
 
         # Obtener sesiones de la clase en el mes
-        start_date = f"{year}-{month:02d}-01"
+        start_date = date(year, month, 1)
         if month == 12:
-            end_date = f"{year + 1}-01-01"
+            end_date = date(year + 1, 1, 1)
         else:
-            end_date = f"{year}-{month + 1:02d}-01"
+            end_date = date(year, month + 1, 1)
 
         stmt_sessions = (
             select(Session)
@@ -185,8 +201,18 @@ class GetStudentAttendanceUseCase:
         ]
 
         month_names = [
-            "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-            "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+            "Enero",
+            "Febrero",
+            "Marzo",
+            "Abril",
+            "Mayo",
+            "Junio",
+            "Julio",
+            "Agosto",
+            "Septiembre",
+            "Octubre",
+            "Noviembre",
+            "Diciembre",
         ]
 
         return SubjectAttendanceDetail(
