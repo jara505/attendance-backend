@@ -18,6 +18,10 @@ python-dotenv = ">=1.0.0"
 email-validator = ">=2.0.0"
 orjson = ">=3.10.0"
 python-multipart = "^0.0.27"
+alembic = "^1.18.4"
+psycopg2 = "^2.9.12"
+faker = "^40.19.1"
+asyncpg = "^0.31.0"
 
 [build-system]
 requires = ["poetry-core"]
