@@ -17,7 +17,6 @@ COPY --from=builder /install /usr/local
 WORKDIR /app
 
 COPY src/ ./src/
-COPY database.db ./database.db
 
 RUN adduser --disabled-password --no-create-home appuser
 USER appuser
