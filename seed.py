@@ -90,6 +90,17 @@ async def seed_all():
     print("🌱 Iniciando seed masivo...")
     await wipe_all()
 
+    # ─────────────────────────────────────────────────
+    # FECHA/HORA "AHORA" — para crear datos listos para probar QR
+    # ─────────────────────────────────────────────────
+    NOW = datetime.now()
+    TODAY = NOW.date()
+    WEEKDAY_NOW = list(WeekDay)[TODAY.weekday()]  # Mon=0..Sun=6 ↔ MON..SUN
+    LIVE_START = (NOW - timedelta(minutes=10)).time().replace(microsecond=0)
+    LIVE_END = (NOW + timedelta(minutes=90)).time().replace(microsecond=0)
+    LIVE_SHIFT = Shift.MORNING if LIVE_START < time(12, 0) else Shift.AFTERNOON
+    print(f"  🕒 Sesiones live: {TODAY} {LIVE_START}–{LIVE_END} ({WEEKDAY_NOW.value})")
+
     async with async_session() as s:
         # ─────────────────────────────────────────────────
         # 1. KNOWLEDGE AREAS
@@ -383,10 +394,16 @@ async def seed_all():
         # 8. CLASSES
         # ─────────────────────────────────────────────────
         # Vinculamos materias con grupos y docentes
+        # Garantía: cada docente recibe al menos una clase (round-robin),
+        # luego el resto se asignan aleatoriamente.
         class_items = []
         period_actual = periods[0]  # primer ciclo 2026
-        for subject in subjects[:12]:  # primeras 12 materias tienen class
-            teacher = choice(teachers)
+        subjects_for_classes = subjects[:12]
+        for idx, subject in enumerate(subjects_for_classes):
+            if idx < len(teachers):
+                teacher = teachers[idx]  # round-robin garantizado
+            else:
+                teacher = choice(teachers)
             group = choice(groups)
             cls = Class(
                 id_class=uid(),
@@ -434,11 +451,28 @@ async def seed_all():
         ]
         schedules = []
         for cls in class_items:
-            # 1-2 horarios por clase
+            # Horario LIVE: hoy a la hora exacta (para test inmediato del QR)
+            live_classroom = choice(classrooms)
+            live_schedule = Schedule(
+                id_schedule=uid(),
+                id_class=cls.id_class,
+                weekday=WEEKDAY_NOW,
+                start_time=LIVE_START,
+                end_time=LIVE_END,
+                shift=LIVE_SHIFT,
+                id_classroom=live_classroom.id_classroom,
+            )
+            s.add(live_schedule)
+            schedules.append(live_schedule)
+
+            # 1-2 horarios adicionales aleatorios en otros días
             num_slots = randint(1, 2)
-            used_days = set()
+            used_days = {WEEKDAY_NOW}
             for _ in range(num_slots):
-                day = choice([d for d in weekdays if d not in used_days])
+                remaining = [d for d in weekdays if d not in used_days]
+                if not remaining:
+                    break
+                day = choice(remaining)
                 used_days.add(day)
                 slot_start, slot_end = choice(slots)
                 shift = Shift.MORNING if slot_start < time(12, 0) else Shift.AFTERNOON
@@ -461,10 +495,27 @@ async def seed_all():
         # 11. SESSIONS (pasadas y futuras)
         # ─────────────────────────────────────────────────
         sessions = []
-        today = date.today()
-        now_time = datetime.now().time()
+        today = TODAY
 
         for cls in class_items:
+            # Sesión LIVE: hoy, lista para abrir QR ahora mismo
+            live_room = choice(classrooms)
+            live_session = Session(
+                id_session=uid(),
+                id_class=cls.id_class,
+                date=today,
+                actual_start_time=None,
+                actual_end_time=None,
+                status=SessionStatus.SCHEDULED,
+                id_classroom=live_room.id_classroom,
+                qr_token=uid(),
+                qr_expires=NOW + timedelta(minutes=90),
+                opens_at=NOW - timedelta(minutes=10),
+                closes_at=NOW + timedelta(minutes=90),
+            )
+            s.add(live_session)
+            sessions.append(live_session)
+
             # 4 sesiones pasadas por clase
             for weeks_ago in range(4, 0, -1):
                 session_date = today - timedelta(weeks=weeks_ago, days=randint(0, 2))
