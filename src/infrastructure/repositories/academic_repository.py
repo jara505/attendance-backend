@@ -6,7 +6,7 @@ from sqlalchemy.orm import selectinload
 from src.infrastructure.models.class_models import Class, Schedule, WeekDay, Enrollment
 from src.infrastructure.models.academic_models import Course, Group, Subject
 from src.infrastructure.models.class_models import Classroom
-from src.infrastructure.models.session_models import Session, SessionStatus
+from src.infrastructure.models.session_models import Attendance, Session, SessionStatus
 
 
 class AcademicRepository:
@@ -92,7 +92,9 @@ class AcademicRepository:
                 course_name = cls.subject.course.name if cls.subject.course else "N/A"
 
                 # Verificar si hay sesión para hoy
-                session = await self.get_session_by_class_and_date(cls.id_class, date.today())
+                session = await self.get_session_by_class_and_date(
+                    cls.id_class, date.today()
+                )
                 session_id = session.id_session if session else None
                 session_status = session.status.value if session else None
 
@@ -158,10 +160,7 @@ class AcademicRepository:
     ) -> Session | None:
         """Obtiene la sesión de una clase para una fecha específica."""
         stmt = select(Session).where(
-            and_(
-                Session.id_class == class_id,
-                Session.date == session_date
-            )
+            and_(Session.id_class == class_id, Session.date == session_date)
         )
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
@@ -193,7 +192,9 @@ class AcademicRepository:
         weekday = weekday_map.get(current_weekday.upper(), WeekDay.MON)
 
         # Obtener las clases del estudiante
-        stmt_enroll = select(Enrollment.id_class).where(Enrollment.id_student == student_id)
+        stmt_enroll = select(Enrollment.id_class).where(
+            Enrollment.id_student == student_id
+        )
         result = await self._session.execute(stmt_enroll)
         class_ids = [row[0] for row in result.fetchall()]
 
@@ -248,7 +249,9 @@ class AcademicRepository:
                 course_name = cls.subject.course.name if cls.subject.course else "N/A"
 
                 # Verificar si hay sesión para hoy
-                session = await self.get_session_by_class_and_date(cls.id_class, date.today())
+                session = await self.get_session_by_class_and_date(
+                    cls.id_class, date.today()
+                )
                 session_id = session.id_session if session else None
                 session_status = session.status.value if session else None
 
@@ -259,6 +262,26 @@ class AcademicRepository:
                         can_check_in = True
                     elif session.status.value == "FINISHED" and session.extended_mode:
                         can_check_in = True
+
+                # Check if student already has attendance for this session
+                check_in_time = None
+                attendance_status = None
+                if session:
+                    att_stmt = select(Attendance).where(
+                        and_(
+                            Attendance.id_session == session.id_session,
+                            Attendance.id_student == student_id,
+                        )
+                    )
+                    att_result = await self._session.execute(att_stmt)
+                    attendance_record = att_result.scalar_one_or_none()
+                    if attendance_record:
+                        check_in_time = attendance_record.record_date
+                        attendance_status = (
+                            attendance_record.status.value
+                            if attendance_record.status
+                            else None
+                        )
 
                 output.append(
                     {
@@ -278,9 +301,11 @@ class AcademicRepository:
                         "session_status": session_status,
                         "can_check_in": can_check_in,
                         "extended_mode": session.extended_mode if session else False,
+                        "check_in_time": check_in_time,
+                        "attendance_status": attendance_status,
                     }
                 )
 
         output.sort(key=lambda x: x["start_time"])
-        return output
 
+        return output
