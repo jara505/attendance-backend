@@ -1,4 +1,4 @@
-from datetime import time
+from datetime import datetime, time
 from enum import Enum
 from pydantic import BaseModel
 
@@ -30,6 +30,8 @@ class TodayClassDTO(BaseModel):
     session_status: SessionStatus | None = None
     can_check_in: bool = False
     extended_mode: bool = False
+    check_in_time: datetime | None = None
+    attendance_status: str | None = None  # PRESENT / LATE / ABSENT / JUSTIFIED
 
 
 class TodayClassesResponse(BaseModel):
