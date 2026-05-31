@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import ORJSONResponse
 
+from src.infrastructure.config import settings
 from src.infrastructure.database import engine, Base
 import src.infrastructure.models  # noqa: F401
 from src.api.routes.auth_router import router as auth_router
@@ -29,6 +30,7 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
     default_response_class=ORJSONResponse,
+    servers=[{"url": settings.PUBLIC_BASE_URL}],
 )
 app.add_middleware(
     CORSMiddleware,
