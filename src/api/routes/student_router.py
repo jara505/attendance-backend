@@ -59,7 +59,7 @@ async def get_semester_attendance(
 ) -> SemesterAttendanceResponse:
     """
     Obtiene el resumen de asistencia por materia para un semestre.
-    
+
     Muestra el porcentaje de asistencia y estado (OK/ALERTA) por cada materia.
     """
     use_case = GetStudentAttendanceUseCase(session)
@@ -76,7 +76,7 @@ async def get_subject_attendance_detail(
 ) -> SubjectAttendanceDetail:
     """
     Obtiene el detalle de asistencia por día para una materia específica.
-    
+
     Muestra cada día del mes con su estado de asistencia:
     - PRESENT:Asistió
     - ABSENT:Ausente
@@ -95,15 +95,20 @@ async def get_student_today_classes(
 ) -> TodayClassesResponse:
     """
     Obtiene las clases del estudiante para el día de hoy.
-    
+
     Retorna lista de clases con estado (ACTIVE/FUTURE/PAST) y
     disponibilidad de QR para que el estudiante pueda registrar asistencia.
     """
     now = datetime.now()
     current_time = now.time()
     weekday_map = {
-        "Monday": "MON", "Tuesday": "TUE", "Wednesday": "WED",
-        "Thursday": "THU", "Friday": "FRI", "Saturday": "SAT", "Sunday": "SUN"
+        "Monday": "MON",
+        "Tuesday": "TUE",
+        "Wednesday": "WED",
+        "Thursday": "THU",
+        "Friday": "FRI",
+        "Saturday": "SAT",
+        "Sunday": "SUN",
     }
     current_weekday = weekday_map.get(now.strftime("%A"), "MON")
 
@@ -130,6 +135,8 @@ async def get_student_today_classes(
             session_status=c.get("session_status"),
             can_check_in=c.get("can_check_in", False),
             extended_mode=c.get("extended_mode", False),
+            check_in_time=c.get("check_in_time"),
+            attendance_status=c.get("attendance_status"),
         )
         for c in classes
     ]
