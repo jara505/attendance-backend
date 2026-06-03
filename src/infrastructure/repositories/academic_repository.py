@@ -106,6 +106,19 @@ class AcademicRepository:
                     elif session.status.value == "FINISHED" and session.extended_mode:
                         can_check_in = True
 
+                # Si hay sesión ACTIVA, el estado de la clase es ACTIVE
+                # sin importar lo que diga el horario del schedule
+                if session_status == "ACTIVE":
+                    status = "ACTIVE"
+                    if remaining is None and session and session.closes_at:
+                        remaining = max(
+                            0,
+                            int(
+                                (session.closes_at - datetime.now()).total_seconds()
+                                / 60
+                            ),
+                        )
+
                 output.append(
                     {
                         "id_class": cls.id_class,
@@ -262,6 +275,18 @@ class AcademicRepository:
                         can_check_in = True
                     elif session.status.value == "FINISHED" and session.extended_mode:
                         can_check_in = True
+
+                # Si hay sesión ACTIVA, el estado de la clase es ACTIVE
+                if session_status == "ACTIVE":
+                    status = "ACTIVE"
+                    if remaining is None and session and session.closes_at:
+                        remaining = max(
+                            0,
+                            int(
+                                (session.closes_at - datetime.now()).total_seconds()
+                                / 60
+                            ),
+                        )
 
                 # Check if student already has attendance for this session
                 check_in_time = None
