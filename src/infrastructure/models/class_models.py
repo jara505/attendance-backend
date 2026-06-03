@@ -105,6 +105,7 @@ class Schedule(Base):
     id_classroom: Mapped[str] = mapped_column(
         ForeignKey("classrooms.id_classroom"), nullable=False
     )
+    end_next_day: Mapped[bool] = mapped_column(default=False)
 
     class_: Mapped["Class"] = relationship(back_populates="schedules")
     classroom: Mapped["Classroom"] = relationship(back_populates="schedules")

@@ -18,6 +18,7 @@ WORKDIR /app
 
 COPY src/ ./src/
 
+
 RUN adduser --disabled-password --no-create-home appuser
 USER appuser
 
