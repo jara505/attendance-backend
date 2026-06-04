@@ -14,6 +14,7 @@ from src.api.routes.academic_router import router as academic_router
 from src.api.routes.profile_router import router as profile_router
 from src.api.routes.session_router import router as session_router
 from src.api.routes.attendance_router import router as attendance_router
+from src.api.routes.admin_router import router as admin_router
 from src.api.routes.student_router import router as student_router
 from src.api.routes.student_router import classes_router
 
@@ -46,4 +47,5 @@ app.include_router(profile_router, prefix="/api/v1")
 app.include_router(session_router, prefix="/api/v1")
 app.include_router(attendance_router, prefix="/api/v1")
 app.include_router(student_router, prefix="/api/v1")
+app.include_router(admin_router, prefix="/api/v1")
 app.include_router(classes_router, prefix="/api/v1")
