@@ -334,3 +334,69 @@ class AcademicRepository:
         output.sort(key=lambda x: x["start_time"])
 
         return output
+
+    async def get_teacher_classes(self, teacher_id: str) -> list[Class]:
+        """Todas las clases de un teacher con relaciones eager-loaded."""
+        stmt = (
+            select(Class)
+            .options(
+                selectinload(Class.subject).selectinload(Subject.course),
+                selectinload(Class.group),
+                selectinload(Class.period),
+                selectinload(Class.enrollments),
+            )
+            .where(Class.id_teacher == teacher_id)
+        )
+        result = await self._session.execute(stmt)
+        return list(result.scalars().unique().all())
+
+    async def get_class_with_details(self, class_id: str) -> Class | None:
+        """Clase con subject, course, group, period, enrollments y students."""
+        stmt = (
+            select(Class)
+            .options(
+                selectinload(Class.subject).selectinload(Subject.course),
+                selectinload(Class.group),
+                selectinload(Class.period),
+                selectinload(Class.enrollments).selectinload(Enrollment.student),
+            )
+            .where(Class.id_class == class_id)
+        )
+        result = await self._session.execute(stmt)
+        return result.scalars().unique().one_or_none()
+
+    async def get_class_sessions_count(self, class_id: str) -> int:
+        """Cantidad total de sesiones de una clase."""
+        stmt = select(func.count(Session.id_session)).where(
+            Session.id_class == class_id
+        )
+        result = await self._session.execute(stmt)
+        return result.scalar() or 0
+
+    async def get_attendance_counts_by_class(
+        self, class_id: str
+    ) -> dict[str, dict[str, int]]:
+        """
+        Retorna { id_student: { PRESENT: N, ABSENT: N, LATE: N, JUSTIFIED: N } }
+        con un solo query GROUP BY sobre attendance JOIN sessions.
+        """
+        stmt = (
+            select(
+                Attendance.id_student,
+                Attendance.status,
+                func.count(Attendance.id_attendance),
+            )
+            .join(Session, Attendance.id_session == Session.id_session)
+            .where(Session.id_class == class_id)
+            .group_by(Attendance.id_student, Attendance.status)
+        )
+        result = await self._session.execute(stmt)
+        rows = result.all()
+
+        counts: dict[str, dict[str, int]] = {}
+        for student_id, status, count in rows:
+            if student_id not in counts:
+                counts[student_id] = {}
+            counts[student_id][status.value] = count  # type: ignore[attr-defined]
+
+        return counts

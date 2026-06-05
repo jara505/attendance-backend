@@ -64,3 +64,47 @@ class SubjectAttendanceDetail(BaseModel):
     subject_name: str
     month: str
     days: list[DayAttendance]
+
+
+# ──────────────────────────────────────────
+# Teacher Attendance DTOs
+# ──────────────────────────────────────────
+
+
+class TeacherClassItem(BaseModel):
+    id_class: str
+    subject: str
+    course: str
+    group: str
+    year: int
+    cycle: int
+    total_students: int
+
+
+class TeacherClassesListResponse(BaseModel):
+    classes: list[TeacherClassItem]
+
+
+class StudentAttendanceSummary(BaseModel):
+    id_student: str
+    first_name: str
+    last_name: str
+    student_card: str
+    present: int = 0
+    absent: int = 0
+    late: int = 0
+    justified: int = 0
+    total: int = 0
+    percentage: float = 100.0
+
+
+class ClassAttendanceResponse(BaseModel):
+    id_class: str
+    subject: str
+    course: str
+    group: str
+    year: int
+    cycle: int
+    total_sessions: int
+    total_students: int
+    students: list[StudentAttendanceSummary]

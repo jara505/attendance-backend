@@ -7,12 +7,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.application.use_cases.change_password_use_case import ChangePasswordUseCase
 from src.application.use_cases.get_today_classes_use_case import GetTodayClassesUseCase
+from src.application.use_cases.get_teacher_attendance_use_case import (
+    GetTeacherAttendanceUseCase,
+)
 from src.application.use_cases.get_user_profile_use_case import GetUserProfileUseCase
 from src.application.use_cases.login_use_case import LoginUseCase
 from src.infrastructure.database import async_session
 from src.infrastructure.models.user_models import Teacher, User, UserRole
 from src.infrastructure.repositories.academic_repository import AcademicRepository
-from src.infrastructure.repositories.auth_repository_impl import SQLAlchemyAuthRepository
+from src.infrastructure.repositories.auth_repository_impl import (
+    SQLAlchemyAuthRepository,
+)
 from src.infrastructure.services.bcrypt_password_service import BcryptPasswordService
 from src.infrastructure.services.jwt_token_service import JwtTokenService
 
@@ -107,3 +112,11 @@ def get_user_profile_use_case(
     session: AsyncSession = Depends(get_session),
 ) -> GetUserProfileUseCase:
     return GetUserProfileUseCase(session)
+
+
+async def get_teacher_attendance_use_case(
+    session: AsyncSession = Depends(get_session),
+) -> GetTeacherAttendanceUseCase:
+    return GetTeacherAttendanceUseCase(
+        repository=AcademicRepository(session),
+    )
