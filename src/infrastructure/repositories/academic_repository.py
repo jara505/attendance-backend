@@ -335,8 +335,14 @@ class AcademicRepository:
 
         return output
 
-    async def get_teacher_classes(self, teacher_id: str) -> list[Class]:
-        """Todas las clases de un teacher con relaciones eager-loaded."""
+    async def get_teacher_classes(
+        self,
+        teacher_id: str,
+        course_id: str | None = None,
+        year: int | None = None,
+    ) -> list[Class]:
+        """Todas las clases de un teacher con relaciones eager-loaded.
+        Filtros opcionales: course_id (por carrera) y year (por año)."""
         stmt = (
             select(Class)
             .options(
@@ -347,6 +353,17 @@ class AcademicRepository:
             )
             .where(Class.id_teacher == teacher_id)
         )
+
+        if course_id is not None:
+            stmt = stmt.join(Subject, Class.id_subject == Subject.id_subject).where(
+                Subject.id_course == course_id
+            )
+
+        if year is not None:
+            stmt = stmt.join(Period, Class.id_period == Period.id_period).where(
+                Period.year == year
+            )
+
         result = await self._session.execute(stmt)
         return list(result.scalars().unique().all())
 

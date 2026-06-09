@@ -11,15 +11,23 @@ class GetTeacherAttendanceUseCase:
     def __init__(self, repository: AcademicRepository) -> None:
         self._repository = repository
 
-    async def get_classes(self, teacher_id: str) -> TeacherClassesListResponse:
-        """Lista todas las clases del teacher."""
-        classes = await self._repository.get_teacher_classes(teacher_id)
+    async def get_classes(
+        self,
+        teacher_id: str,
+        course_id: str | None = None,
+        year: int | None = None,
+    ) -> TeacherClassesListResponse:
+        """Lista todas las clases del teacher, opcionalmente filtradas."""
+        classes = await self._repository.get_teacher_classes(
+            teacher_id, course_id=course_id, year=year
+        )
 
         items = [
             TeacherClassItem(
                 id_class=cls.id_class,
                 subject=cls.subject.name,
                 course=cls.subject.course.name if cls.subject.course else "",
+                course_id=cls.subject.course.id_course if cls.subject.course else "",
                 group=cls.group.code if cls.group else "",
                 year=cls.period.year,
                 cycle=cls.period.cycle,

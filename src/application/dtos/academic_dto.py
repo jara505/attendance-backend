@@ -75,6 +75,7 @@ class TeacherClassItem(BaseModel):
     id_class: str
     subject: str
     course: str
+    course_id: str
     group: str
     year: int
     cycle: int

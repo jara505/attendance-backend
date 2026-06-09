@@ -6,14 +6,24 @@
 
 Lista todas las clases del docente autenticado.
 
+**Query params opcionales**
+
+| Parametro | Tipo | Descripcion |
+|-----------|------|-------------|
+| `course_id` | string | Filtrar por ID de carrera |
+| `year` | int | Filtrar por anio |
+
+Ejemplo: `GET /api/v1/teacher/classes?course_id=xxx&year=2026`
+
 **Response**
 ```json
 {
   "classes": [
     {
       "id_class": "uuid",
-      "subject": "Programación I",
-      "course": "Ingeniería Informática",
+      "subject": "Programacion I",
+      "course": "Ingenieria Informatica",
+      "course_id": "uuid",
       "group": "A",
       "year": 2026,
       "cycle": 1,
