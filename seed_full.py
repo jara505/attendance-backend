@@ -83,6 +83,7 @@ TODAY = date.today()
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def uid() -> str:
     return str(uuid4())
 
@@ -114,11 +115,18 @@ def student_card() -> str:
     return f"EST{uid()[:8].upper()}"
 
 
-def pick_dates(schedule_weekday: WeekDay, semester_start: date, semester_end: date, count: int) -> list[date]:
+def pick_dates(
+    schedule_weekday: WeekDay, semester_start: date, semester_end: date, count: int
+) -> list[date]:
     """Retorna `count` fechas dentro del semestre que caen en `schedule_weekday`."""
     week_map = {
-        WeekDay.MON: 0, WeekDay.TUE: 1, WeekDay.WED: 2,
-        WeekDay.THU: 3, WeekDay.FRI: 4, WeekDay.SAT: 5, WeekDay.SUN: 6,
+        WeekDay.MON: 0,
+        WeekDay.TUE: 1,
+        WeekDay.WED: 2,
+        WeekDay.THU: 3,
+        WeekDay.FRI: 4,
+        WeekDay.SAT: 5,
+        WeekDay.SUN: 6,
     }
     target_wd = week_map[schedule_weekday]
     current = semester_start
@@ -129,6 +137,28 @@ def pick_dates(schedule_weekday: WeekDay, semester_start: date, semester_end: da
         candidates.append(current)
         current += timedelta(weeks=1)
     return random.sample(candidates, min(count, len(candidates)))
+
+
+def all_dates_for_weekday(weekday: WeekDay, start: date, end: date) -> list[date]:
+    """Retorna TODAS las fechas para un weekday dado dentro del rango [start, end]."""
+    week_map = {
+        WeekDay.MON: 0,
+        WeekDay.TUE: 1,
+        WeekDay.WED: 2,
+        WeekDay.THU: 3,
+        WeekDay.FRI: 4,
+        WeekDay.SAT: 5,
+        WeekDay.SUN: 6,
+    }
+    target_wd = week_map[weekday]
+    current = start
+    while current.weekday() != target_wd:
+        current += timedelta(days=1)
+    result: list[date] = []
+    while current <= end:
+        result.append(current)
+        current += timedelta(weeks=1)
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -147,14 +177,14 @@ AREA_DEFS = [
 # 2. Courses  ──────────────────────────────────────────────────────────────
 # (code, name, area_name, duration_years)
 COURSE_DEFS: list[tuple[str, str, str, int]] = [
-    ("IC", "Ingeniería Civil",          "Ciencias Básicas",         5),
-    ("IS", "Ingeniería de Sistemas",    "Ingeniería y Tecnología",  5),
-    ("II", "Ingeniería Industrial",     "Ingeniería y Tecnología",  5),
-    ("AR", "Arquitectura",              "Arte y Diseño",            5),
-    ("AD", "Administración de Empresas","Ciencias Sociales",        4),
-    ("DE", "Derecho",                   "Ciencias Sociales",        5),
-    ("ME", "Medicina",                  "Ciencias Básicas",         6),
-    ("DG", "Diseño Gráfico",            "Arte y Diseño",            4),
+    ("IC", "Ingeniería Civil", "Ciencias Básicas", 5),
+    ("IS", "Ingeniería de Sistemas", "Ingeniería y Tecnología", 5),
+    ("II", "Ingeniería Industrial", "Ingeniería y Tecnología", 5),
+    ("AR", "Arquitectura", "Arte y Diseño", 5),
+    ("AD", "Administración de Empresas", "Ciencias Sociales", 4),
+    ("DE", "Derecho", "Ciencias Sociales", 5),
+    ("ME", "Medicina", "Ciencias Básicas", 6),
+    ("DG", "Diseño Gráfico", "Arte y Diseño", 4),
 ]
 
 # 3. Groups  ──────────────────────────────────────────────────────────────
@@ -170,6 +200,7 @@ GROUP_PATTERNS: dict[str, tuple[int, int, list[str]]] = {
     "DG": (1, 3, ["A"]),
 }
 
+
 def build_groups() -> list[str]:
     groups: list[str] = []
     for code, _, _, _ in COURSE_DEFS:
@@ -179,10 +210,23 @@ def build_groups() -> list[str]:
                 groups.append(f"{code}{year}{s}")
     return groups
 
+
 # 4. Subjects  ─────────────────────────────────────────────────────────────
 SUBJECT_DEFS: dict[str, list[str]] = {
-    "IC": ["Cálculo I", "Física I", "Álgebra Lineal", "Geometría Analítica", "Resistencia de Materiales"],
-    "IS": ["Programación I", "Base de Datos I", "Redes I", "Sistemas Operativos", "Ingeniería de Software"],
+    "IC": [
+        "Cálculo I",
+        "Física I",
+        "Álgebra Lineal",
+        "Geometría Analítica",
+        "Resistencia de Materiales",
+    ],
+    "IS": [
+        "Programación I",
+        "Base de Datos I",
+        "Redes I",
+        "Sistemas Operativos",
+        "Ingeniería de Software",
+    ],
     "II": ["Termodinámica", "Investigación Operativa", "Gestión de Calidad"],
     "AR": ["Dibujo Arquitectónico", "Historia de la Arquitectura", "Estructuras I"],
     "AD": ["Contabilidad General", "Marketing", "Recursos Humanos"],
@@ -193,29 +237,32 @@ SUBJECT_DEFS: dict[str, list[str]] = {
 
 # 5. Periods  ──────────────────────────────────────────────────────────────
 PERIOD_DEFS: list[tuple[int, int, date, date]] = [
-    (2026, 1, date(2026, 3, 1),  date(2026, 6, 30)),
-    (2026, 2, date(2026, 8, 1),  date(2026, 11, 30)),
+    (2026, 1, date(2026, 3, 1), date(2026, 6, 30)),
+    (2026, 2, date(2026, 8, 1), date(2026, 11, 30)),
 ]
+
 
 # 6. Classrooms  ───────────────────────────────────────────────────────────
 def build_classrooms() -> list[tuple[str, str, str]]:
     rooms: list[tuple[str, str, str]] = []
     for i in range(1, 11):
-        rooms.append((f"A{100+i}", "A", "SALÓN"))
+        rooms.append((f"A{100 + i}", "A", "SALÓN"))
     for i in range(1, 9):
-        rooms.append((f"B{200+i}", "B", "SALÓN"))
+        rooms.append((f"B{200 + i}", "B", "SALÓN"))
     for i in range(1, 9):
-        rooms.append((f"C{300+i}", "C", "LAB"))
+        rooms.append((f"C{300 + i}", "C", "LAB"))
     for i in range(1, 5):
         rooms.append((f"D{i:04d}", "D", "TALLER"))
     return rooms
 
+
 # 7. Teachers  ─────────────────────────────────────────────────────────────
 DEFAULT_TEACHER_NAMES = [
     ("María", "González"),
-    ("José",  "Rodríguez"),
-    ("Carlos","López"),
+    ("José", "Rodríguez"),
+    ("Carlos", "López"),
 ]
+
 
 def build_teachers() -> list[dict]:
     teachers: list[dict] = []
@@ -231,6 +278,7 @@ def build_teachers() -> list[dict]:
             teachers.append(dict(first=first, last=last, is_default=False))
     return teachers
 
+
 # 8. Students  ─────────────────────────────────────────────────────────────
 def build_students() -> list[dict]:
     students: list[dict] = []
@@ -241,19 +289,35 @@ def build_students() -> list[dict]:
         last = fake.last_name()
         if (first, last) not in used_names:
             used_names.add((first, last))
-            students.append(dict(
-                first=first, last=last,
-                is_default=len(students) < 3,
-            ))
+            students.append(
+                dict(
+                    first=first,
+                    last=last,
+                    is_default=len(students) < 3,
+                )
+            )
     return students
+
 
 # 9. Classes plan  ─────────────────────────────────────────────────────────
 # course_code -> [(subject_name, group_code)]
 CLASS_PLAN: dict[str, list[tuple[str, str]]] = {
     "IC": [("Cálculo I", "IC1A"), ("Física I", "IC1A"), ("Álgebra Lineal", "IC2A")],
-    "IS": [("Programación I", "IS1A"), ("Base de Datos I", "IS2A"), ("Redes I", "IS3A")],
-    "II": [("Termodinámica", "II1A"), ("Investigación Operativa", "II2A"), ("Gestión de Calidad", "II3A")],
-    "AR": [("Dibujo Arquitectónico", "AR1A"), ("Historia de la Arquitectura", "AR2A"), ("Estructuras I", "AR3A")],
+    "IS": [
+        ("Programación I", "IS1A"),
+        ("Base de Datos I", "IS2A"),
+        ("Redes I", "IS3A"),
+    ],
+    "II": [
+        ("Termodinámica", "II1A"),
+        ("Investigación Operativa", "II2A"),
+        ("Gestión de Calidad", "II3A"),
+    ],
+    "AR": [
+        ("Dibujo Arquitectónico", "AR1A"),
+        ("Historia de la Arquitectura", "AR2A"),
+        ("Estructuras I", "AR3A"),
+    ],
     "AD": [("Contabilidad General", "AD1A"), ("Marketing", "AD2A")],
     "DE": [("Introducción al Derecho", "DE1A"), ("Derecho Penal", "DE2A")],
     "ME": [("Anatomía Humana", "ME1A"), ("Fisiología", "ME2A")],
@@ -262,46 +326,80 @@ CLASS_PLAN: dict[str, list[tuple[str, str]]] = {
 
 # teacher index -> course code
 TEACHER_COURSE_IDX: list[tuple[int, str]] = [
-    (0, "IC"), (1, "IS"), (2, "II"), (3, "AR"),
-    (4, "AD"), (5, "DE"), (6, "ME"), (7, "DG"),
+    (0, "IC"),
+    (1, "IS"),
+    (2, "II"),
+    (3, "AR"),
+    (4, "AD"),
+    (5, "DE"),
+    (6, "ME"),
+    (7, "DG"),
 ]
 
 # 10. Schedule slots (no conflicts per teacher)  ───────────────────────────
 # teacher_index -> [(weekday, start, end)]
 TEACHER_SLOTS: dict[int, list[tuple[WeekDay, time, time]]] = {
-    0: [(WeekDay.MON, time(7,0), time(8,30)), (WeekDay.TUE, time(8,45), time(10,15)), (WeekDay.WED, time(10,30), time(12,0))],
-    1: [(WeekDay.MON, time(8,45), time(10,15)), (WeekDay.TUE, time(10,30), time(12,0)), (WeekDay.WED, time(13,0), time(14,30))],
-    2: [(WeekDay.MON, time(10,30), time(12,0)), (WeekDay.TUE, time(13,0), time(14,30)), (WeekDay.WED, time(14,45), time(16,15))],
-    3: [(WeekDay.MON, time(13,0), time(14,30)), (WeekDay.TUE, time(14,45), time(16,15)), (WeekDay.WED, time(16,30), time(18,0))],
-    4: [(WeekDay.MON, time(14,45), time(16,15)), (WeekDay.TUE, time(16,30), time(18,0))],
-    5: [(WeekDay.MON, time(16,30), time(18,0)),  (WeekDay.THU, time(7,0), time(8,30))],
-    6: [(WeekDay.THU, time(8,45), time(10,15)),  (WeekDay.THU, time(10,30), time(12,0))],
-    7: [(WeekDay.THU, time(13,0), time(14,30)),  (WeekDay.THU, time(14,45), time(16,15))],
+    0: [
+        (WeekDay.MON, time(7, 0), time(8, 30)),
+        (WeekDay.TUE, time(8, 45), time(10, 15)),
+        (WeekDay.WED, time(10, 30), time(12, 0)),
+    ],
+    1: [
+        (WeekDay.MON, time(8, 45), time(10, 15)),
+        (WeekDay.TUE, time(10, 30), time(12, 0)),
+        (WeekDay.WED, time(13, 0), time(14, 30)),
+    ],
+    2: [
+        (WeekDay.MON, time(10, 30), time(12, 0)),
+        (WeekDay.TUE, time(13, 0), time(14, 30)),
+        (WeekDay.WED, time(14, 45), time(16, 15)),
+    ],
+    3: [
+        (WeekDay.MON, time(13, 0), time(14, 30)),
+        (WeekDay.TUE, time(14, 45), time(16, 15)),
+        (WeekDay.WED, time(16, 30), time(18, 0)),
+    ],
+    4: [
+        (WeekDay.MON, time(14, 45), time(16, 15)),
+        (WeekDay.TUE, time(16, 30), time(18, 0)),
+    ],
+    5: [
+        (WeekDay.MON, time(16, 30), time(18, 0)),
+        (WeekDay.THU, time(7, 0), time(8, 30)),
+    ],
+    6: [
+        (WeekDay.THU, time(8, 45), time(10, 15)),
+        (WeekDay.THU, time(10, 30), time(12, 0)),
+    ],
+    7: [
+        (WeekDay.THU, time(13, 0), time(14, 30)),
+        (WeekDay.THU, time(14, 45), time(16, 15)),
+    ],
 }
 
 # 11. Session count per class  ─────────────────────────────────────────────
 # (course_code, subject_name) -> session_count (total ~30)
 SESSION_COUNTS: dict[tuple[str, str], int] = {
-    ("IC", "Cálculo I"):             8,
-    ("IC", "Física I"):              8,
-    ("IC", "Álgebra Lineal"):        7,
-    ("IS", "Programación I"):        8,
-    ("IS", "Base de Datos I"):       7,
-    ("IS", "Redes I"):               7,
-    ("II", "Termodinámica"):         8,
-    ("II", "Investigación Operativa"):7,
-    ("II", "Gestión de Calidad"):    7,
+    ("IC", "Cálculo I"): 8,
+    ("IC", "Física I"): 8,
+    ("IC", "Álgebra Lineal"): 7,
+    ("IS", "Programación I"): 8,
+    ("IS", "Base de Datos I"): 7,
+    ("IS", "Redes I"): 7,
+    ("II", "Termodinámica"): 8,
+    ("II", "Investigación Operativa"): 7,
+    ("II", "Gestión de Calidad"): 7,
     ("AR", "Dibujo Arquitectónico"): 8,
     ("AR", "Historia de la Arquitectura"): 7,
-    ("AR", "Estructuras I"):         7,
-    ("AD", "Contabilidad General"):  8,
-    ("AD", "Marketing"):             7,
-    ("DE", "Introducción al Derecho"):8,
-    ("DE", "Derecho Penal"):         7,
-    ("ME", "Anatomía Humana"):       8,
-    ("ME", "Fisiología"):            7,
-    ("DG", "Dibujo Artístico"):      8,
-    ("DG", "Tipografía"):            7,
+    ("AR", "Estructuras I"): 7,
+    ("AD", "Contabilidad General"): 8,
+    ("AD", "Marketing"): 7,
+    ("DE", "Introducción al Derecho"): 8,
+    ("DE", "Derecho Penal"): 7,
+    ("ME", "Anatomía Humana"): 8,
+    ("ME", "Fisiología"): 7,
+    ("DG", "Dibujo Artístico"): 8,
+    ("DG", "Tipografía"): 7,
 }
 # Suma: 23+22+22+22+15+15+15+15 = ~149 sesiones
 
@@ -312,6 +410,7 @@ EXTENDED_TEACHERS = {1, 3}
 # ---------------------------------------------------------------------------
 # MAIN SEED
 # ---------------------------------------------------------------------------
+
 
 async def clear_data(session: AsyncSession) -> None:
     tables = [
@@ -359,7 +458,14 @@ async def seed_all(session: AsyncSession) -> None:
     course_map: dict[str, dict] = {}  # code -> {id, name}
     for code, name, area_name, years in COURSE_DEFS:
         cid = uid()
-        session.add(Course(id_course=cid, name=name, id_area=area_map[area_name], duration_years=years))
+        session.add(
+            Course(
+                id_course=cid,
+                name=name,
+                id_area=area_map[area_name],
+                duration_years=years,
+            )
+        )
         course_map[code] = {"id": cid, "name": name}
     await session.flush()
     print(f"✓ 2. courses: {len(COURSE_DEFS)}")
@@ -384,7 +490,9 @@ async def seed_all(session: AsyncSession) -> None:
     for code, names in SUBJECT_DEFS.items():
         for sname in names:
             sid = uid()
-            session.add(Subject(id_subject=sid, name=sname, id_course=course_map[code]["id"]))
+            session.add(
+                Subject(id_subject=sid, name=sname, id_course=course_map[code]["id"])
+            )
             subject_map[sname] = {"id": sid, "course_code": code}
             subj_list.append({"name": sname, "id": sid, "course_code": code})
     await session.flush()
@@ -396,7 +504,11 @@ async def seed_all(session: AsyncSession) -> None:
     period_map: dict[tuple[int, int], str] = {}  # (year, cycle) -> id
     for year, cycle, sdate, edate in PERIOD_DEFS:
         pid = uid()
-        session.add(Period(id_period=pid, year=year, cycle=cycle, start_date=sdate, end_date=edate))
+        session.add(
+            Period(
+                id_period=pid, year=year, cycle=cycle, start_date=sdate, end_date=edate
+            )
+        )
         period_map[(year, cycle)] = pid
     await session.flush()
     print(f"✓ 5. periods: {len(PERIOD_DEFS)}")
@@ -421,27 +533,57 @@ async def seed_all(session: AsyncSession) -> None:
 
     # Admin
     admin_id = uid()
-    session.add(User(
-        id_user=admin_id, email="admin@catsivard.edu",
-        password_hash=PWD_ADMIN, role=UserRole.ADMIN, must_change_password=False,
-    ))
+    session.add(
+        User(
+            id_user=admin_id,
+            email="admin@catsivard.edu",
+            password_hash=PWD_ADMIN,
+            role=UserRole.ADMIN,
+            must_change_password=False,
+        )
+    )
     await session.flush()
 
     for idx, tdata in enumerate(teachers_list):
         tid = uid()
-        pwd = PWD_TEACHER if tdata["is_default"] else bcrypt.hashpw(b"random789", bcrypt.gensalt()).decode()
+        pwd = (
+            PWD_TEACHER
+            if tdata["is_default"]
+            else bcrypt.hashpw(b"random789", bcrypt.gensalt()).decode()
+        )
         email = email_addr(tdata["first"], tdata["last"])
-        session.add(User(id_user=tid, email=email, password_hash=pwd, role=UserRole.TEACHER, must_change_password=False))
+        session.add(
+            User(
+                id_user=tid,
+                email=email,
+                password_hash=pwd,
+                role=UserRole.TEACHER,
+                must_change_password=False,
+            )
+        )
         tch_id = uid()
-        session.add(Teacher(
-            id_teacher=tch_id, first_name=tdata["first"], last_name=tdata["last"],
-            teacher_card=teacher_card(), id_user=tid,
-            modifications_count=0, teacher_flag=False, must_change_password=False,
-        ))
-        teacher_records.append(dict(
-            user_id=tid, teacher_id=tch_id, email=email,
-            first=tdata["first"], last=tdata["last"], idx=idx,
-        ))
+        session.add(
+            Teacher(
+                id_teacher=tch_id,
+                first_name=tdata["first"],
+                last_name=tdata["last"],
+                teacher_card=teacher_card(),
+                id_user=tid,
+                modifications_count=0,
+                teacher_flag=False,
+                must_change_password=False,
+            )
+        )
+        teacher_records.append(
+            dict(
+                user_id=tid,
+                teacher_id=tch_id,
+                email=email,
+                first=tdata["first"],
+                last=tdata["last"],
+                idx=idx,
+            )
+        )
     await session.flush()
     print(f"✓ 7. users: 1 admin + {len(teachers_list)} teachers")
 
@@ -449,12 +591,20 @@ async def seed_all(session: AsyncSession) -> None:
     # 8. Users + Students
     # ------------------------------------------------------------------
     students_list = build_students()
-    student_records: list[dict] = []  # {user_id, student_id, course_code, email, first, last}
+    student_records: list[
+        dict
+    ] = []  # {user_id, student_id, course_code, email, first, last}
 
     # Distribute students across courses
     course_student_dist: list[tuple[str, int]] = [
-        ("IC", 3), ("IS", 3), ("II", 3), ("AR", 3),
-        ("AD", 2), ("DE", 2), ("ME", 3), ("DG", 3),
+        ("IC", 3),
+        ("IS", 3),
+        ("II", 3),
+        ("AR", 3),
+        ("AD", 2),
+        ("DE", 2),
+        ("ME", 3),
+        ("DG", 3),
     ]
 
     st_idx = 0
@@ -462,19 +612,42 @@ async def seed_all(session: AsyncSession) -> None:
         for _ in range(count):
             sdata = students_list[st_idx]
             sid = uid()
-            pwd = PWD_STUDENT if sdata["is_default"] else bcrypt.hashpw(b"random456", bcrypt.gensalt()).decode()
+            pwd = (
+                PWD_STUDENT
+                if sdata["is_default"]
+                else bcrypt.hashpw(b"random456", bcrypt.gensalt()).decode()
+            )
             email = email_addr(sdata["first"], sdata["last"])
-            session.add(User(id_user=sid, email=email, password_hash=pwd, role=UserRole.STUDENT, must_change_password=False))
+            session.add(
+                User(
+                    id_user=sid,
+                    email=email,
+                    password_hash=pwd,
+                    role=UserRole.STUDENT,
+                    must_change_password=False,
+                )
+            )
             std_id = uid()
-            session.add(Student(
-                id_student=std_id, first_name=sdata["first"], last_name=sdata["last"],
-                student_card=student_card(), id_course=course_map[course_code]["id"],
-                id_user=sid,
-            ))
-            student_records.append(dict(
-                user_id=sid, student_id=std_id, course_code=course_code,
-                email=email, first=sdata["first"], last=sdata["last"],
-            ))
+            session.add(
+                Student(
+                    id_student=std_id,
+                    first_name=sdata["first"],
+                    last_name=sdata["last"],
+                    student_card=student_card(),
+                    id_course=course_map[course_code]["id"],
+                    id_user=sid,
+                )
+            )
+            student_records.append(
+                dict(
+                    user_id=sid,
+                    student_id=std_id,
+                    course_code=course_code,
+                    email=email,
+                    first=sdata["first"],
+                    last=sdata["last"],
+                )
+            )
             st_idx += 1
     await session.flush()
     print(f"✓ 8. students: {len(student_records)}")
@@ -482,7 +655,9 @@ async def seed_all(session: AsyncSession) -> None:
     # ------------------------------------------------------------------
     # 9. Classes + Schedules
     # ------------------------------------------------------------------
-    class_records: list[dict] = []  # {class_id, teacher_idx, course_code, subject_name, group_code}
+    class_records: list[
+        dict
+    ] = []  # {class_id, teacher_idx, course_code, subject_name, group_code}
     schedule_records: list[dict] = []
 
     period_id = period_map[(2026, 1)]
@@ -492,18 +667,24 @@ async def seed_all(session: AsyncSession) -> None:
         subjects_for_course = CLASS_PLAN[course_code]
         for i, (subj_name, group_code) in enumerate(subjects_for_course):
             cls_id = uid()
-            session.add(Class(
-                id_class=cls_id,
-                id_teacher=teacher_records[teacher_idx]["teacher_id"],
-                id_subject=subject_map[subj_name]["id"],
-                id_group=group_map[group_code],
-                id_period=period_id,
-            ))
-            class_records.append(dict(
-                class_id=cls_id, teacher_idx=teacher_idx,
-                course_code=course_code, subject_name=subj_name,
-                group_code=group_code,
-            ))
+            session.add(
+                Class(
+                    id_class=cls_id,
+                    id_teacher=teacher_records[teacher_idx]["teacher_id"],
+                    id_subject=subject_map[subj_name]["id"],
+                    id_group=group_map[group_code],
+                    id_period=period_id,
+                )
+            )
+            class_records.append(
+                dict(
+                    class_id=cls_id,
+                    teacher_idx=teacher_idx,
+                    course_code=course_code,
+                    subject_name=subj_name,
+                    group_code=group_code,
+                )
+            )
 
             # Schedule
             wd, st, et = slots[i]
@@ -511,16 +692,27 @@ async def seed_all(session: AsyncSession) -> None:
             # Assign a random classroom
             classroom_code = random.choice(list(classroom_map.keys()))
             sched_id = uid()
-            session.add(Schedule(
-                id_schedule=sched_id, id_class=cls_id,
-                weekday=wd, start_time=st, end_time=et,
-                shift=shift, id_classroom=classroom_map[classroom_code],
-                end_next_day=False,
-            ))
-            schedule_records.append(dict(
-                schedule_id=sched_id, class_id=cls_id,
-                weekday=wd, start_time=st, end_time=et,
-            ))
+            session.add(
+                Schedule(
+                    id_schedule=sched_id,
+                    id_class=cls_id,
+                    weekday=wd,
+                    start_time=st,
+                    end_time=et,
+                    shift=shift,
+                    id_classroom=classroom_map[classroom_code],
+                    end_next_day=False,
+                )
+            )
+            schedule_records.append(
+                dict(
+                    schedule_id=sched_id,
+                    class_id=cls_id,
+                    weekday=wd,
+                    start_time=st,
+                    end_time=et,
+                )
+            )
     await session.flush()
     print(f"✓ 9. classes: {len(class_records)}, schedule: {len(schedule_records)}")
 
@@ -534,7 +726,13 @@ async def seed_all(session: AsyncSession) -> None:
         for crec in class_records:
             if crec["course_code"] == student_course:
                 enr_id = uid()
-                session.add(Enrollment(id_enrollment=enr_id, id_student=srec["student_id"], id_class=crec["class_id"]))
+                session.add(
+                    Enrollment(
+                        id_enrollment=enr_id,
+                        id_student=srec["student_id"],
+                        id_class=crec["class_id"],
+                    )
+                )
                 enrollment_count += 1
     await session.flush()
     print(f"✓ 10. enrollments: {enrollment_count}")
@@ -557,11 +755,17 @@ async def seed_all(session: AsyncSession) -> None:
     # ------------------------------------------------------------------
     # 11. Sessions
     # ------------------------------------------------------------------
-    session_records: list[dict] = []  # {session_id, class_id, course_code, subject_name, weekday, date}
+    session_records: list[
+        dict
+    ] = []  # {session_id, class_id, course_code, subject_name, weekday, date}
 
     session_total = 0
     semester_start = date(2026, 3, 2)
-    semester_end = date(2026, 5, 31)
+    semester_end = date(2026, 6, 30)
+
+    # IC (María): todas las fechas de clase desde marzo hasta ayer
+    ic_students_only = {"ciro@catsivard.edu", "dominga@catsivard.edu"}
+    ic_end = TODAY - timedelta(days=1)  # ayer (hoy domingo no va)
 
     for (course_code, subj_name), sched_count in SESSION_COUNTS.items():
         crec = class_by_course_subj.get((course_code, subj_name))
@@ -570,7 +774,13 @@ async def seed_all(session: AsyncSession) -> None:
         sched = schedule_by_class.get(crec["class_id"])
         if not sched:
             continue
-        dates = pick_dates(sched["weekday"], semester_start, semester_end, sched_count)
+        if course_code == "IC":
+            # Generar TODAS las fechas de clase hasta ayer
+            dates = all_dates_for_weekday(sched["weekday"], semester_start, ic_end)
+        else:
+            dates = pick_dates(
+                sched["weekday"], semester_start, semester_end, sched_count
+            )
         classroom_code = random.choice(list(classroom_map.keys()))
         for d in dates:
             # Slight offset from schedule times
@@ -597,33 +807,52 @@ async def seed_all(session: AsyncSession) -> None:
             extended = False
             ext_reason = None
             # Extended mode for teacher indices 1 (José) and 3 (Ana)
-            if crec["teacher_idx"] in EXTENDED_TEACHERS and session_total % 3 == 0 and status in (SessionStatus.FINISHED, SessionStatus.ACTIVE):
+            if (
+                crec["teacher_idx"] in EXTENDED_TEACHERS
+                and session_total % 3 == 0
+                and status in (SessionStatus.FINISHED, SessionStatus.ACTIVE)
+            ):
                 extended = True
-                ext_reason = random.choice([
-                    "Clase práctica adicional",
-                    "Repaso de contenido",
-                    "Consulta de dudas",
-                ])
+                ext_reason = random.choice(
+                    [
+                        "Clase práctica adicional",
+                        "Repaso de contenido",
+                        "Consulta de dudas",
+                    ]
+                )
 
             opens = datetime.combine(d, actual_start) - timedelta(minutes=10)
             closes = datetime.combine(d, actual_end)
             qr_exp = opens + timedelta(hours=1)
 
-            session.add(Session(
-                id_session=ses_id, id_class=crec["class_id"],
-                date=d, actual_start_time=actual_start,
-                actual_end_time=actual_end, status=status,
-                id_classroom=classroom_map[classroom_code],
-                qr_token=qr, qr_expires=qr_exp,
-                opens_at=opens, closes_at=closes,
-                extended_mode=extended, extension_reason=ext_reason,
-            ))
-            session_records.append(dict(
-                session_id=ses_id, class_id=crec["class_id"],
-                course_code=course_code, subject_name=subj_name,
-                date=d, weekday=sched["weekday"],
-                teacher_idx=crec["teacher_idx"],
-            ))
+            session.add(
+                Session(
+                    id_session=ses_id,
+                    id_class=crec["class_id"],
+                    date=d,
+                    actual_start_time=actual_start,
+                    actual_end_time=actual_end,
+                    status=status,
+                    id_classroom=classroom_map[classroom_code],
+                    qr_token=qr,
+                    qr_expires=qr_exp,
+                    opens_at=opens,
+                    closes_at=closes,
+                    extended_mode=extended,
+                    extension_reason=ext_reason,
+                )
+            )
+            session_records.append(
+                dict(
+                    session_id=ses_id,
+                    class_id=crec["class_id"],
+                    course_code=course_code,
+                    subject_name=subj_name,
+                    date=d,
+                    weekday=sched["weekday"],
+                    teacher_idx=crec["teacher_idx"],
+                )
+            )
             session_total += 1
 
     await session.flush()
@@ -640,76 +869,76 @@ async def seed_all(session: AsyncSession) -> None:
     attendance_records: list[dict] = []
     attendance_total = 0
 
-    # Track absences per student to cap at 5
-    absence_count: dict[str, int] = {}
-
     for ses_rec in session_records:
-        # Students enrolled in this class
-        class_students = students_by_course.get(ses_rec["course_code"], [])
+        # Solo asistencias para Ciro y Dominga
+        class_students = [
+            s
+            for s in students_by_course.get(ses_rec["course_code"], [])
+            if s["email"] in ic_students_only
+        ]
         for srec in class_students:
-            # Determine attendance probability based on current absence count
-            current_absences = absence_count.get(srec["student_id"], 0)
-
-            # Students with 5+ absences MUST attend (or be justified)
-            if current_absences >= 5:
-                roll = random.random()
-                if roll < 0.85:
-                    att_status = AttendanceStatus.PRESENT
-                elif roll < 0.95:
-                    att_status = AttendanceStatus.LATE
-                else:
-                    att_status = AttendanceStatus.JUSTIFIED
+            # Simular flujo real:
+            # - Si escaneó QR → PRESENT o LATE
+            # - Si no escaneó y no justificó → PENDING (lo crea el sistema al finalizar)
+            # - Si justificó → JUSTIFIED
+            roll = random.random()
+            if roll < 0.60:
+                att_status = AttendanceStatus.PRESENT
+                method = AttendanceMethod.QR
+            elif roll < 0.78:
+                att_status = AttendanceStatus.LATE
+                method = AttendanceMethod.QR
+            elif roll < 0.90:
+                # No escaneó → queda PENDING hasta que el docente decida
+                att_status = AttendanceStatus.PENDING
+                method = None
             else:
-                # Normal distribution
-                roll = random.random()
-                if roll < 0.60:
-                    att_status = AttendanceStatus.PRESENT
-                elif roll < 0.75:
-                    att_status = AttendanceStatus.LATE
-                elif roll < 0.88:
-                    att_status = AttendanceStatus.ABSENT
-                else:
-                    att_status = AttendanceStatus.JUSTIFIED
-
-            # Count absences
-            if att_status == AttendanceStatus.ABSENT:
-                absence_count[srec["student_id"]] = current_absences + 1
-
-            method = AttendanceMethod.QR if random.random() < 0.8 else AttendanceMethod.MANUAL
-            record_dt = datetime.combine(ses_rec["date"], time(random.randint(7, 18), random.randint(0, 59)))
+                att_status = AttendanceStatus.JUSTIFIED
+                method = AttendanceMethod.MANUAL
+            record_dt = datetime.combine(
+                ses_rec["date"], time(random.randint(7, 18), random.randint(0, 59))
+            )
 
             # Justification logic
             justification = None
             id_teacher_justifies = None
             justification_date = None
             if att_status == AttendanceStatus.JUSTIFIED:
-                justification = random.choice([
-                    "Problemas de salud",
-                    "Emergencia familiar",
-                    "Viaje personal",
-                    "Cita médica",
-                ])
+                justification = random.choice(
+                    [
+                        "Problemas de salud",
+                        "Emergencia familiar",
+                        "Viaje personal",
+                        "Cita médica",
+                    ]
+                )
                 just_teacher = random.choice(teacher_records)
                 id_teacher_justifies = just_teacher["teacher_id"]
                 justification_date = record_dt + timedelta(days=random.randint(0, 3))
 
             att_id = uid()
-            session.add(Attendance(
-                id_attendance=att_id,
-                id_session=ses_rec["session_id"],
-                id_student=srec["student_id"],
-                status=att_status,
-                method=method,
-                record_date=record_dt,
-                ip_address=f"192.168.{random.randint(1,254)}.{random.randint(1,254)}",
-                justification=justification,
-                id_teacher_justifies=id_teacher_justifies,
-                justification_date=justification_date,
-            ))
-            attendance_records.append(dict(
-                attendance_id=att_id, session_id=ses_rec["session_id"],
-                student_id=srec["student_id"], status=att_status,
-            ))
+            session.add(
+                Attendance(
+                    id_attendance=att_id,
+                    id_session=ses_rec["session_id"],
+                    id_student=srec["student_id"],
+                    status=att_status,
+                    method=method,
+                    record_date=record_dt,
+                    ip_address=f"192.168.{random.randint(1, 254)}.{random.randint(1, 254)}",
+                    justification=justification,
+                    id_teacher_justifies=id_teacher_justifies,
+                    justification_date=justification_date,
+                )
+            )
+            attendance_records.append(
+                dict(
+                    attendance_id=att_id,
+                    session_id=ses_rec["session_id"],
+                    student_id=srec["student_id"],
+                    status=att_status,
+                )
+            )
             attendance_total += 1
 
     await session.flush()
@@ -731,23 +960,30 @@ async def seed_all(session: AsyncSession) -> None:
 
         if arec["status"] == AttendanceStatus.JUSTIFIED:
             ev_type = EventType.JUSTIFICATION
-            comment = random.choice([
-                "Justificación aceptada",
-                "Justificación por enfermedad",
-            ])
-        elif random.random() < 0.3:
+            comment = random.choice(
+                [
+                    "Justificación aceptada",
+                    "Justificación por enfermedad",
+                ]
+            )
+        elif random.random() < 0.3 and arec["status"] != AttendanceStatus.PENDING:
             ev_type = EventType.STATUS_CHANGE
-            prev_st = AttendanceStatus.ABSENT.value
+            prev_st = AttendanceStatus.PENDING.value
             new_st = arec["status"].value
             comment = "Cambio de estado manual"
 
         actor = random.choice(teacher_records)
-        session.add(AttendanceEvent(
-            id_event=ev_id, id_attendance=arec["attendance_id"],
-            type=ev_type, previous_status=prev_st,
-            new_status=new_st, comment=comment,
-            id_actor=actor["teacher_id"],
-        ))
+        session.add(
+            AttendanceEvent(
+                id_event=ev_id,
+                id_attendance=arec["attendance_id"],
+                type=ev_type,
+                previous_status=prev_st,
+                new_status=new_st,
+                comment=comment,
+                id_actor=actor["teacher_id"],
+            )
+        )
         event_total += 1
     await session.flush()
     print(f"✓ 13. attendance_event: {event_total}")
@@ -762,22 +998,31 @@ async def seed_all(session: AsyncSession) -> None:
             continue
         fl_id = uid()
         level = random.choice([FlagLevel.LOW, FlagLevel.MEDIUM, FlagLevel.HIGH])
-        status = random.choice([FlagStatus.ACTIVE, FlagStatus.UNDER_REVIEW, FlagStatus.CLOSED])
-        reason = random.choice([
-            "Ausencias repetitivas",
-            "Retrasos frecuentes",
-            "Reporte de estudiantes",
-            "Irregularidades en registro de asistencia",
-        ])
+        status = random.choice(
+            [FlagStatus.ACTIVE, FlagStatus.UNDER_REVIEW, FlagStatus.CLOSED]
+        )
+        reason = random.choice(
+            [
+                "Ausencias repetitivas",
+                "Retrasos frecuentes",
+                "Reporte de estudiantes",
+                "Irregularidades en registro de asistencia",
+            ]
+        )
         # Optional: link to a session
         session_id = None
         if random.random() < 0.4 and session_records:
             session_id = random.choice(session_records)["session_id"]
-        session.add(TeacherFlag(
-            id_flag=fl_id, id_teacher=trec["teacher_id"],
-            reason=reason, level=level, status=status,
-            session_id=session_id,
-        ))
+        session.add(
+            TeacherFlag(
+                id_flag=fl_id,
+                id_teacher=trec["teacher_id"],
+                reason=reason,
+                level=level,
+                status=status,
+                session_id=session_id,
+            )
+        )
         flag_total += 1
     await session.flush()
     print(f"✓ 14. teacher_flags: {flag_total}")
@@ -792,12 +1037,14 @@ async def seed_all(session: AsyncSession) -> None:
             continue
         att_id = uid()
         file_type = random.choice([AttachmentType.IMAGE, AttachmentType.PDF])
-        session.add(JustificationAttachment(
-            id_attachment=att_id,
-            id_attendance=arec["attendance_id"],
-            file_url=f"/uploads/justificacion_{att_id[:8]}.{'jpg' if file_type == AttachmentType.IMAGE else 'pdf'}",
-            type=file_type,
-        ))
+        session.add(
+            JustificationAttachment(
+                id_attachment=att_id,
+                id_attendance=arec["attendance_id"],
+                file_url=f"/uploads/justificacion_{att_id[:8]}.{'jpg' if file_type == AttachmentType.IMAGE else 'pdf'}",
+                type=file_type,
+            )
+        )
         attach_total += 1
     await session.flush()
     print(f"✓ 15. justification_attachment: {attach_total}")
@@ -807,19 +1054,26 @@ async def seed_all(session: AsyncSession) -> None:
     # ------------------------------------------------------------------
     await session.commit()
     print("\n✅ Seed completado exitosamente.")
-    print(f"   Resumen: areas={len(AREA_DEFS)}, cursos={len(COURSE_DEFS)}, "
-          f"grupos={len(group_names)}, subjects={len(subj_list)}, "
-          f"periodos={len(PERIOD_DEFS)}, aulas={len(classrooms)}")
-    print(f"   teachers={len(teachers_list)}, students={len(student_records)}, "
-          f"classes={len(class_records)}")
-    print(f"   enrollments={enrollment_count}, sessiones={session_total}, "
-          f"asistencias={attendance_total}")
+    print(
+        f"   Resumen: areas={len(AREA_DEFS)}, cursos={len(COURSE_DEFS)}, "
+        f"grupos={len(group_names)}, subjects={len(subj_list)}, "
+        f"periodos={len(PERIOD_DEFS)}, aulas={len(classrooms)}"
+    )
+    print(
+        f"   teachers={len(teachers_list)}, students={len(student_records)}, "
+        f"classes={len(class_records)}"
+    )
+    print(
+        f"   enrollments={enrollment_count}, sessiones={session_total}, "
+        f"asistencias={attendance_total}"
+    )
     print(f"   eventos={event_total}, flags={flag_total}, adjuntos={attach_total}")
 
 
 # ---------------------------------------------------------------------------
 # Entrypoint
 # ---------------------------------------------------------------------------
+
 
 async def main() -> None:
     engine = create_async_engine(settings.DATABASE_URL, echo=False)

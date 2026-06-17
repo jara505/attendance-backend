@@ -17,7 +17,7 @@ class AttendanceRepositoryPort(ABC):
         session_id: str,
         student_id: str,
         status: AttendanceStatus,
-        method: str,
+        method: str | None = None,
         ip_address: str | None = None,
         latitude: float | None = None,
         longitude: float | None = None,

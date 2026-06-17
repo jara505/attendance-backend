@@ -42,8 +42,11 @@ class CheckInUseCase:
             session.id_session, student_id
         )
         # Si ya está PRESENT/LATE/JUSTIFIED, no se permite re-registrar.
-        # Si está ABSENT (marcado al finalizar la sesión), se promueve durante el modo extendido.
-        if existing is not None and existing.status != AttendanceStatus.ABSENT:
+        # Si está ABSENT o PENDING (marcado al finalizar la sesión), se promueve.
+        if existing is not None and existing.status not in (
+            AttendanceStatus.ABSENT,
+            AttendanceStatus.PENDING,
+        ):
             raise AlreadyCheckedInError()
 
         # Determinar si es tardanza (más de 15 min después del inicio)
@@ -56,8 +59,11 @@ class CheckInUseCase:
             if now_minutes - start_minutes > 15:
                 status = AttendanceStatus.LATE
 
-        if existing is not None and existing.status == AttendanceStatus.ABSENT:
-            # Promover ABSENT → PRESENT/LATE (caso modo extendido)
+        if existing is not None and existing.status in (
+            AttendanceStatus.ABSENT,
+            AttendanceStatus.PENDING,
+        ):
+            # Promover ABSENT/PENDING → PRESENT/LATE (caso modo extendido o check-in tardío)
             attendance = await self.attendance_repository.promote_absent(
                 attendance_id=existing.id_attendance,
                 status=status,

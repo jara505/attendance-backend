@@ -20,6 +20,7 @@ class AttendanceStatus(str, enum.Enum):
     ABSENT = "ABSENT"
     LATE = "LATE"
     JUSTIFIED = "JUSTIFIED"
+    PENDING = "PENDING"
 
 
 class AttendanceMethod(str, enum.Enum):

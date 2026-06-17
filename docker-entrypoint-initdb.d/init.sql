@@ -127,7 +127,8 @@ CREATE TYPE public.attendancestatus AS ENUM (
     'PRESENT',
     'ABSENT',
     'LATE',
-    'JUSTIFIED'
+    'JUSTIFIED',
+    'PENDING'
 );
 
 

@@ -6,7 +6,12 @@ from sqlalchemy.orm import selectinload
 from src.infrastructure.models.class_models import Class, Schedule, WeekDay, Enrollment
 from src.infrastructure.models.academic_models import Course, Group, Subject
 from src.infrastructure.models.class_models import Classroom
-from src.infrastructure.models.session_models import Attendance, Session, SessionStatus
+from src.infrastructure.models.session_models import (
+    Attendance,
+    Session,
+    SessionStatus,
+    AttendanceStatus,
+)
 
 
 class AcademicRepository:
@@ -301,12 +306,26 @@ class AcademicRepository:
                     att_result = await self._session.execute(att_stmt)
                     attendance_record = att_result.scalar_one_or_none()
                     if attendance_record:
-                        check_in_time = attendance_record.record_date
+                        # check_in_time solo si realmente escaneó (PRESENT/LATE)
+                        # PENDING/ABSENT/JUSTIFIED no generan badge
+                        if attendance_record.status in (
+                            AttendanceStatus.PRESENT,
+                            AttendanceStatus.LATE,
+                        ):
+                            check_in_time = attendance_record.record_date
                         attendance_status = (
                             attendance_record.status.value
                             if attendance_record.status
                             else None
                         )
+
+                        # Recalcular can_check_in: si ya tiene registro FIRME, no puede escanear
+                        if attendance_record.status in (
+                            AttendanceStatus.PRESENT,
+                            AttendanceStatus.LATE,
+                            AttendanceStatus.JUSTIFIED,
+                        ):
+                            can_check_in = False
 
                 output.append(
                     {

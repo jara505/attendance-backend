@@ -47,6 +47,41 @@ class AdminRepository:
     async def purge_sessions_and_attendance(self, class_id: str) -> int:
         """Delete all attendance records and sessions for a class.
         Returns number of deleted sessions."""
+        # 1. attendance_event (FK -> attendance)
+        await self._session.execute(
+            text("""
+                DELETE FROM attendance_event
+                WHERE id_attendance IN (
+                    SELECT a.id_attendance FROM attendance a
+                    JOIN sessions s ON a.id_session = s.id_session
+                    WHERE s.id_class = :cid
+                )
+            """),
+            {"cid": class_id},
+        )
+        # 2. justification_attachment (FK -> attendance)
+        await self._session.execute(
+            text("""
+                DELETE FROM justification_attachment
+                WHERE id_attendance IN (
+                    SELECT a.id_attendance FROM attendance a
+                    JOIN sessions s ON a.id_session = s.id_session
+                    WHERE s.id_class = :cid
+                )
+            """),
+            {"cid": class_id},
+        )
+        # 3. teacher_flags (FK -> sessions)
+        await self._session.execute(
+            text("""
+                DELETE FROM teacher_flags
+                WHERE session_id IN (
+                    SELECT id_session FROM sessions WHERE id_class = :cid
+                )
+            """),
+            {"cid": class_id},
+        )
+        # 4. attendance (FK -> sessions)
         await self._session.execute(
             text("""
                 DELETE FROM attendance
@@ -56,6 +91,7 @@ class AdminRepository:
             """),
             {"cid": class_id},
         )
+        # 5. sessions
         result = await self._session.execute(
             text("DELETE FROM sessions WHERE id_class = :cid"),
             {"cid": class_id},

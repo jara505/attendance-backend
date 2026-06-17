@@ -1,6 +1,9 @@
 from datetime import datetime, time, date
 
-from src.infrastructure.models.session_models import SessionStatus, AttendanceMethod, AttendanceStatus
+from src.infrastructure.models.session_models import (
+    SessionStatus,
+    AttendanceStatus,
+)
 
 
 class FinishSessionUseCase:
@@ -9,7 +12,7 @@ class FinishSessionUseCase:
         self.attendance_repository = attendance_repository
         self.academic_repository = academic_repository
 
-    async def execute(self, session_id: str,teacher_id: str) -> dict:
+    async def execute(self, session_id: str, teacher_id: str) -> dict:
         # Validar que la sesión existe
         session = await self.session_repository.get_by_id(session_id)
         if session is None:
@@ -41,24 +44,23 @@ class FinishSessionUseCase:
         enrollments = await self.academic_repository.get_enrollments_by_class(
             session.id_class
         )
-        enrollment_ids = [e.id_enrollment for e in enrollments]
 
         # 2. Obtener attendances registradas
         attendances = await self.attendance_repository.get_by_session(session_id)
         registered_student_ids = {a.id_student for a in attendances}
 
-        # 3. Marcar ausentes a los NO registrados
-        absent_count = 0
+        # 3. Marcar como PENDING a los NO registrados
+        pending_count = 0
         for enrollment in enrollments:
             if enrollment.id_student not in registered_student_ids:
-                # Crear registro de ausente
+                # Queda en espera — el docente decide después
                 await self.attendance_repository.create(
                     session_id=session_id,
                     student_id=enrollment.id_student,
-                    status=AttendanceStatus.ABSENT,
-                    method="MANUAL",
+                    status=AttendanceStatus.PENDING,
+                    method=None,
                 )
-                absent_count += 1
+                pending_count += 1
 
         # 4. Cerrar la sesión
         session = await self.session_repository.finish(
@@ -69,7 +71,7 @@ class FinishSessionUseCase:
         return {
             "id_session": session.id_session,
             "status": session.status.value,
-            "absent_count": absent_count,
+            "pending_count": pending_count,
             "present_count": len(attendances),
         }
 
