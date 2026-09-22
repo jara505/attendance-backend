@@ -6,10 +6,7 @@ from src.domain.exceptions.session_exceptions import (
     InvalidSessionStateError,
     ExtendedModeNotAllowedError,
 )
-
-
-QR_EXPIRES_SECONDS = 15
-EXTENSION_MINUTES = 10
+from src.application.use_cases.constants import EXTENSION_MINUTES, QR_EXPIRES_SECONDS
 
 
 class ExtendSessionUseCase:
