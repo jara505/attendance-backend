@@ -1,0 +1,280 @@
+// ============================================================
+// Attendance Backend — Full Database Schema (DBML)
+// ============================================================
+
+// ── Enums ──
+
+Enum UserRole {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+
+Enum WeekDay {
+  MON
+  TUE
+  WED
+  THU
+  FRI
+  SAT
+  SUN
+}
+
+Enum Shift {
+  MORNING
+  AFTERNOON
+}
+
+Enum SessionStatus {
+  SCHEDULED
+  ACTIVE
+  CANCELED
+  FINISHED
+}
+
+Enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  JUSTIFIED
+}
+
+Enum AttendanceMethod {
+  QR
+  MANUAL
+}
+
+Enum AttachmentType {
+  IMAGE
+  PDF
+}
+
+Enum EventType {
+  CREATION
+  STATUS_CHANGE
+  JUSTIFICATION
+}
+
+Enum FlagLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+Enum FlagStatus {
+  ACTIVE
+  UNDER_REVIEW
+  CLOSED
+}
+
+// ── Tables ──
+
+Table users {
+  id_user varchar [pk]
+  email varchar [unique, not null]
+  password_hash varchar [not null]
+  role UserRole [not null]
+  must_change_password boolean [not null, default: true]
+  created_at datetime [default: `now()`]
+  deleted_at datetime
+}
+
+Table students {
+  id_student varchar [pk]
+  first_name varchar [not null]
+  last_name varchar [not null]
+  student_card varchar [unique, not null]
+  id_course varchar [not null]
+  id_user varchar [unique, not null]
+  deleted_at datetime
+  editable_fields varchar
+  photo_url varchar
+}
+
+Table teachers {
+  id_teacher varchar [pk]
+  first_name varchar [not null]
+  last_name varchar [not null]
+  teacher_card varchar [unique, not null]
+  id_user varchar [unique, not null]
+  modifications_count int [not null, default: 0]
+  teacher_flag boolean [not null, default: false]
+  must_change_password boolean [not null, default: true]
+  deleted_at datetime
+  photo_url varchar
+}
+
+Table knowledge_area {
+  id_area varchar [pk]
+  name varchar [not null]
+}
+
+Table courses {
+  id_course varchar [pk]
+  name varchar [not null]
+  id_area varchar [not null]
+  duration_years int
+}
+
+Table subjects {
+  id_subject varchar [pk]
+  name varchar [not null]
+  id_course varchar [not null]
+}
+
+Table groups_ {
+  id_group varchar [pk]
+  code varchar [not null]
+}
+
+Table periods {
+  id_period varchar [pk]
+  year int [not null]
+  cycle int [not null]
+  start_date date
+  end_date date
+
+  indexes {
+    (year, cycle) [unique]
+  }
+}
+
+Table classrooms {
+  id_classroom varchar [pk]
+  pavilion varchar [not null]
+  type varchar [not null]
+  latitude float
+  longitude float
+  allowed_radius float
+}
+
+Table classes {
+  id_class varchar [pk]
+  id_teacher varchar [not null]
+  id_subject varchar [not null]
+  id_group varchar [not null]
+  id_period varchar [not null]
+}
+
+Table enrollments {
+  id_enrollment varchar [pk]
+  id_student varchar [not null]
+  id_class varchar [not null]
+
+  indexes {
+    (id_student, id_class) [unique]
+  }
+}
+
+Table schedule {
+  id_schedule varchar [pk]
+  id_class varchar [not null]
+  weekday WeekDay [not null]
+  start_time time [not null]
+  end_time time [not null]
+  shift Shift [not null]
+  id_classroom varchar [not null]
+  end_next_day boolean [default: false]
+}
+
+Table sessions {
+  id_session varchar [pk]
+  id_class varchar [not null]
+  date date [not null]
+  actual_start_time time
+  actual_end_time time
+  status SessionStatus [not null]
+  id_classroom varchar [not null]
+  qr_token varchar [unique, not null]
+  qr_expires datetime
+  opens_at datetime
+  closes_at datetime
+  extended_mode boolean [default: false]
+  extension_reason varchar
+  close_notification_minutes int
+}
+
+Table attendance {
+  id_attendance varchar [pk]
+  id_session varchar [not null]
+  id_student varchar [not null]
+  status AttendanceStatus
+  method AttendanceMethod
+  record_date datetime [default: `now()`]
+  ip_address varchar
+  latitude float
+  longitude float
+  justification varchar
+  id_teacher_justifies varchar
+  justification_date datetime
+
+  indexes {
+    (id_session, id_student) [unique]
+  }
+}
+
+Table justification_attachment {
+  id_attachment varchar [pk]
+  id_attendance varchar [not null]
+  file_url varchar [not null]
+  type AttachmentType
+  upload_date datetime [default: `now()`]
+}
+
+Table attendance_event {
+  id_event varchar [pk]
+  id_attendance varchar [not null]
+  type EventType
+  previous_status varchar
+  new_status varchar
+  comment varchar
+  id_actor varchar [not null]
+  date datetime [default: `now()`]
+}
+
+Table teacher_flags {
+  id_flag varchar [pk]
+  id_teacher varchar [not null]
+  reason varchar
+  level FlagLevel
+  status FlagStatus
+  creation_date datetime [default: `now()`]
+  session_id varchar
+}
+
+// ── Relationships ──
+
+Ref: students.id_user > users.id_user
+Ref: students.id_course > courses.id_course
+
+Ref: teachers.id_user > users.id_user
+
+Ref: courses.id_area > knowledge_area.id_area
+
+Ref: subjects.id_course > courses.id_course
+
+Ref: classes.id_teacher > teachers.id_teacher
+Ref: classes.id_subject > subjects.id_subject
+Ref: classes.id_group > groups_.id_group
+Ref: classes.id_period > periods.id_period
+
+Ref: enrollments.id_student > students.id_student
+Ref: enrollments.id_class > classes.id_class
+
+Ref: schedule.id_class > classes.id_class
+Ref: schedule.id_classroom > classrooms.id_classroom
+
+Ref: sessions.id_class > classes.id_class
+Ref: sessions.id_classroom > classrooms.id_classroom
+
+Ref: attendance.id_session > sessions.id_session
+Ref: attendance.id_student > students.id_student
+Ref: attendance.id_teacher_justifies > teachers.id_teacher
+
+Ref: justification_attachment.id_attendance > attendance.id_attendance
+
+Ref: attendance_event.id_attendance > attendance.id_attendance
+Ref: attendance_event.id_actor > teachers.id_teacher
+
+Ref: teacher_flags.id_teacher > teachers.id_teacher
+Ref: teacher_flags.session_id > sessions.id_session
