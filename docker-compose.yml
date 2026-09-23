@@ -1,6 +1,6 @@
 services:
   backend:
-    image: mrx505/attendance-backend:latest
+    image: mrx505/attendance-api:latest
     ports:
       - "8000:8000"
     environment:
