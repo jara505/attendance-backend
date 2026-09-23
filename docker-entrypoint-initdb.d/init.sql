@@ -2,8 +2,6 @@
 -- PostgreSQL database dump
 --
 
-\restrict q8r2OzMXzxmoWC0bAfCJ9dTdG1FUoKsr6FGq0aSqPkTNKPJ8JUDFd10Wyms8UwJ
-
 -- Dumped from database version 18.3
 -- Dumped by pg_dump version 18.3
 
@@ -2255,6 +2253,4 @@ ALTER TABLE ONLY public.teachers
 --
 -- PostgreSQL database dump complete
 --
-
-\unrestrict q8r2OzMXzxmoWC0bAfCJ9dTdG1FUoKsr6FGq0aSqPkTNKPJ8JUDFd10Wyms8UwJ
 

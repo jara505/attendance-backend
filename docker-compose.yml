@@ -7,24 +7,31 @@ services:
       - JWT_SECRET_KEY=[REDACTED:secret-value]
       - ALGORITHM=HS256
       - ACCESS_TOKEN_EXPIRATION_MINUTES=30
-      - DATABASE_URL=postgresql+asyncpg://user:pass@db:5432/db
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/db
       - PUBLIC_BASE_URL=http://localhost:8000
+      - TZ=America/Managua
 
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     restart: unless-stopped
 
   db:
-    image: postgres:16-alpine
+    image: postgres:18-alpine
     ports:
       - "5432:5432"
     environment:
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=pass
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=db
     volumes:
-      - db_data:/var/lib/postgresql/data
-      - ./docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+      - db_data:/var/lib/postgresql
+      - ./docker-entrypoint-initdb.d/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
 volumes:
   db_data:
